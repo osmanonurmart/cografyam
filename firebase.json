@@ -4,9 +4,9 @@
     "ignore": [
       "firebase.json",
       "**/.*",
+      "**/.*/**",
       "**/node_modules/**",
-      "README.md",
-      "LISANSLAR.md"
+      "README.md"
     ],
     "headers": [
       {
