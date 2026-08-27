@@ -2,6 +2,28 @@
 
 Coğrafyayı haritaya bakarak çalışmak için PWA. Konu seç → soruyu oku → haritada doğru yeri tıkla.
 
+## Yayın
+
+| Ortam | Adres |
+|---|---|
+| Firebase Hosting | <https://cografyam.web.app> |
+| GitHub Pages | <https://osmanonurmart.github.io/cografyam/> |
+| Kaynak kod | <https://github.com/osmanonurmart/cografyam> |
+
+```bash
+firebase deploy --only hosting   # Firebase
+git push                         # GitHub Pages (main dalı kendiliğinden yayınlanır)
+```
+
+Bütün yollar göreli olduğu için uygulama hem kök dizinde (Firebase) hem alt
+dizinde (Pages `/cografyam/`) çalışır. `firebase.json`, `index.html` ve `sw.js`
+için önbelleği kapatır; sürüm damgalı `js`/`css` dosyalarını bir yıl önbellekler.
+
+**Dikkat:** `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**`
+bulunmalı. Yalnızca ilki varsa `.git` klasörünün *içindeki* dosyalar yayına
+çıkar ve commit geçmişin internetten okunabilir hale gelir — ilk denemede
+tam olarak bu oldu.
+
 ## Çalıştırma
 
 **VS Code'da:** klasörü aç, `index.html` üzerine sağ tık → *Open with Live Server*
