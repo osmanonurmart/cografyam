@@ -26,6 +26,7 @@
 const Bulut = {
   acik: false,
   hazir: false,
+  bagli: true,      // ilk bağlantı denemesi başarılı mı
   _db: null,
   _dinleyiciler: [],
   _bekleyen: new Set(),
@@ -54,20 +55,28 @@ const Bulut = {
   },
 
   /* Uygulama açılırken: bulutta içerik varsa onu bekle, yoksa bu
-     cihazdakini yükle. Sonra dinlemeye geç. */
-  async _ilkYukleme() {
-    try {
-      const anlik = await this._db.collection("konular").get();
-      const bulutBos = anlik.empty;
-      const yerel = Depo.oku("kutuphane", []);
+     cihazdakini yükle. Sonra dinlemeye geç.
 
-      if (bulutBos && yerel.length) {
-        // ilk kurulum: bu cihazdaki içerik buluta taşınır
-        await this.tumIcerigiGonder(true);
+     Süre sınırı neden var? Firestore bozuk yapılandırmada (yanlış
+     projectId, silinmiş API anahtarı, ağın engellediği bir bağlantı)
+     hata fırlatmıyor — sessizce asılıyor. Sınır olmasaydı uygulama
+     açılış ekranında sonsuza kadar bekler, kullanıcı hiçbir şey
+     yapamazdı. Süre dolarsa yerel aynayla açılır; bağlantı sonradan
+     gelirse dinleyiciler zaten devreye girer. */
+  async _ilkYukleme() {
+    const SINIR = 6000;
+    try {
+      const anlik = await Promise.race([
+        this._db.collection("konular").get(),
+        new Promise((_, hata) => setTimeout(() => hata(new Error("zaman aşımı")), SINIR))
+      ]);
+      if (anlik.empty && Depo.oku("kutuphane", []).length) {
+        await this.tumIcerigiGonder(true);   // ilk kurulum: yereli buluta taşı
       }
     } catch (e) {
       console.warn("İlk yükleme başarısız:", e);
-      bildir("Buluta bağlanılamadı — bu cihazda çalışılıyor");
+      bildir("Buluta bağlanılamadı — şimdilik bu cihazda çalışılıyor");
+      this.bagli = false;
     }
     this._dinlemeyeBasla();
     this.hazir = true;

@@ -2610,7 +2610,7 @@ function bulutHazir() {
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
-  bulutDurumu(true);
+  bulutDurumu(Bulut.bagli);
   anaEkranaGec();
 }
 
@@ -2670,7 +2670,11 @@ function baslat() {
 
   /* Firebase yüklenemezse (dosyadan açma, ağ yok, SDK engelli) uygulama
      eskisi gibi yalnızca bu cihazda çalışır — veri kaybolmaz. */
-  if (typeof Bulut !== "undefined" && Bulut.baslat()) return;
+  try {
+    if (typeof Bulut !== "undefined" && Bulut.baslat()) return;
+  } catch (e) {
+    console.warn("Bulut başlatılamadı:", e);   // bozuk yapılandırma uygulamayı kilitlemesin
+  }
   yerelKipeDus();
 }
 
