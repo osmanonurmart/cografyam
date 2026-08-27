@@ -224,7 +224,49 @@ zorlar; 128×128'e küçültülmüş bir PNG depoda ~14-40 KB tuttuğu için kab
 sığar. Kayıt kotaya takılırsa uygulama sessiz kalmaz, "Depo doldu" uyarısı çıkar ve o
 değişikliğin **kaydedilmediğini** söyler.
 
-Firebase'e geçince sadece `app.js` içindeki `Depo.oku` / `Depo.yaz` fonksiyonlarının içi değişecek.
+### Bulut senkronu
+
+Artık Firebase Auth (Google) + Firestore var. `localStorage` kaldırılmadı;
+**yerel ayna** olarak duruyor. Uygulamanın geri kalanı hâlâ senkron `Depo.oku`
+ile okur, [`js/bulut.js`](js/bulut.js) yalnızca iki yönü bağlar:
+
+| Yön | Ne olur |
+|---|---|
+| bulut → yerel | `onSnapshot` geleni `localStorage`'a yazar ve ekranı tazeler |
+| yerel → bulut | `Depo.yaz` her yazdığında dürtülür, 800 ms bekletip toplu gönderir |
+
+Böylece bütün ekranlar dokunulmadan çalışmaya devam etti ve çevrimdışıyken
+uygulama aynadan okumaya devam ediyor. Firestore'un kendi çevrimdışı kalıcılığı
+da açık: internetsizken yazdıkların sıraya girer, bağlantı gelince gönderilir.
+
+**Koleksiyonlar**
+
+| Yol | İçerik | Kim yazar |
+|---|---|---|
+| `konular/{id}` | konu, objeleri ve soruları | yalnızca yönetici |
+| `ustKonular/{id}` | ana ekran grupları | yalnızca yönetici |
+| `gorseller/{id}` | palet görselleri (`{ad, veri}`) | yalnızca yönetici |
+| `yoneticiler/{uid}` | rol listesi | **hiç kimse** (yalnızca konsol) |
+| `kullanicilar/{uid}` | hesap bilgisi | sahibi |
+| `kullanicilar/{uid}/veri/{ilerleme·ayarlar·gunluk}` | kişisel veri | sahibi |
+
+Kurallar [`firestore.rules`](firestore.rules) dosyasında; yayınlamak için
+`firebase deploy --only firestore:rules`.
+
+**Yönetici yapmak.** `yoneticiler` koleksiyonuna istemciden yazılamaz, yani
+kimse kendini yönetici ilan edemez. İlk yöneticiyi konsoldan eklemek gerekir:
+Firestore › `yoneticiler` koleksiyonu › belge kimliği = kişinin uid'i. Uid,
+uygulamada sağ üstteki hesap rozetine tıklayınca görünür.
+
+**Hesap = profil.** Cihaz içi çoklu profil kaldırıldı; ilerleme artık Firebase
+kullanıcı kimliğine bağlı. Öğrenci rolündeki hesaplarda Düzenle kutusu gizlenir
+— asıl koruma sunucuda, kurallarda.
+
+**Bulut boşken yerel içerik silinmez.** Boş listeyi yerele yazmak, kişinin o
+cihazdaki bütün konularını silmek olurdu; `_bosBulutuYoksay` bunu engeller.
+
+`js/vendor/` altındaki Firebase SDK dosyaları bilerek yerelde tutuluyor —
+CDN'den gelseydi çevrimdışı açılış çalışmazdı.
 
 ## Ana ekran düzeni
 
