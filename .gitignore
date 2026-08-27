@@ -1,0 +1,14 @@
+# Firebase
+.firebase/
+firebase-debug.log
+*-debug.log
+
+# Editör / işletim sistemi
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Bağımlılıklar (şu an yok, ileride gerekirse)
+node_modules/

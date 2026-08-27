@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Coğrafyam</title>
+<meta name="theme-color" content="#0b1220">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coğrafyam">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css?s=30">
+</head>
+<body>
+
+<!-- ============ PROFİL EKRANI ============ -->
+<section class="ekran aktif" id="ekran-profil">
+  <div class="profil-sahne">
+    <h1 class="marka">Coğrafya<span>m</span></h1>
+    <p class="marka-alt">Kim çalışıyor?</p>
+    <div class="profil-liste" id="profil-liste"></div>
+    <button class="metin-btn" id="btn-profil-duzenle">Profilleri Düzenle</button>
+  </div>
+</section>
+
+<!-- ============ ANA EKRAN ============ -->
+<section class="ekran" id="ekran-ana">
+  <header class="ust-bar">
+    <div class="ust-sol">
+      <button class="marka-blok" id="btn-istatistik" title="İstatistikleri gör">
+        <div class="marka-kucuk">Coğrafya<span>m</span></div>
+      </button>
+      <span class="marka-ayrac" aria-hidden="true"></span>
+      <a class="marka-blok kart-kutusu" id="btn-kart-kutusu"
+         href="https://osmanonurmart.github.io/kart-kutusu/" target="_blank" rel="noopener noreferrer"
+         title="Kart Kutusu'nu yeni sekmede aç">
+        <div class="marka-kucuk">Kart <span>Kutusu</span></div>
+      </a>
+      <span class="marka-ayrac" aria-hidden="true"></span>
+      <a class="marka-blok kart-kutusu" id="btn-ders-takibim"
+         href="https://osmanonurmart.github.io/ders-takip-panom/" target="_blank" rel="noopener noreferrer"
+         title="Ders Takibim'i yeni sekmede aç">
+        <div class="marka-kucuk">Ders <span>Takibim</span></div>
+      </a>
+    </div>
+    <div class="ust-sag">
+      <button class="profil-rozet" id="btn-aktif-profil">
+        <span class="rozet-avatar" id="rozet-avatar">🙂</span>
+        <span id="rozet-ad">Profil</span>
+      </button>
+      <button class="ikon-btn kucuk" id="btn-ayarlar" title="Ayarlar">⚙</button>
+    </div>
+  </header>
+
+  <main class="ana-govde">
+    <h2 class="bolum-baslik">Konular</h2>
+    <div class="konu-grid" id="konu-grid"></div>
+
+    <div class="duzen-grid tek">
+      <button class="duzen-kutu" id="btn-duzenle">
+        <span class="duzen-ikon">🛠️</span>
+        <span class="duzen-ad">Düzenle</span>
+        <span class="duzen-alt">Konular, sorular, harita</span>
+      </button>
+    </div>
+  </main>
+  <p class="dipnot alt-sabit">Lodos Digital ürünüdür</p>
+</section>
+
+<!-- ============ ÇALIŞMA EKRANI ============ -->
+<section class="ekran" id="ekran-calisma">
+  <header class="calisma-ust">
+    <button class="ikon-btn" id="btn-cikis" title="Kaydet ve çık">←</button>
+    <div class="calisma-bilgi">
+      <span class="calisma-konu" id="calisma-konu"></span>
+      <span class="calisma-sayac" id="calisma-sayac"></span>
+    </div>
+    <div class="skor">
+      <span class="rozet dogru">✓ <b id="skor-dogru">0</b></span>
+      <span class="rozet yanlis">✕ <b id="skor-yanlis">0</b></span>
+      <span class="rozet pas">⤼ <b id="skor-pas">0</b></span>
+    </div>
+    <div class="ilerleme-cizgi"><div class="ilerleme-dolu" id="ilerleme-dolu"></div></div>
+  </header>
+
+  <div class="harita-alan" id="harita-alan"></div>
+
+  <div class="soru-bar">
+    <button class="yuvarlak-btn" id="btn-geri"><span class="sim">⟵</span><span class="etiket">Geri</span></button>
+    <button class="yuvarlak-btn" id="btn-pas"><span class="sim">⤼</span><span class="etiket">Pas</span></button>
+
+    <div class="soru-kutu" id="soru-kutu">
+      <div class="soru-metin" id="soru-metin">—</div>
+      <div class="geri-bildirim" id="geri-bildirim"></div>
+    </div>
+
+    <button class="yuvarlak-btn" id="btn-durdur"><span class="sim">⏸</span><span class="etiket">Durdur</span></button>
+    <button class="yuvarlak-btn" id="btn-devam" disabled><span class="sim">▶</span><span class="etiket">Devam</span></button>
+  </div>
+
+  <div class="ortu gizli" id="ortu-duraklat">
+    <div class="ortu-kart">
+      <div class="ortu-ikon">⏸</div>
+      <h3>Duraklatıldı</h3>
+      <p class="ortu-alt">İlerlemen kaydedildi. Uygulamayı kapatsan da bu sorudan devam edersin.</p>
+      <div class="ortu-btnler">
+        <button class="ana-btn" id="btn-ortu-devam">Devam Et</button>
+        <button class="ikincil-btn" id="btn-ortu-cik">Ana Ekran</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ortu gizli" id="ortu-bitis">
+    <div class="ortu-kart">
+      <div class="ortu-ikon">🎉</div>
+      <h3>Konu bitti</h3>
+      <p class="ortu-alt" id="bitis-ozet"></p>
+      <div class="ortu-btnler">
+        <button class="ana-btn" id="btn-bastan">Baştan Başla</button>
+        <button class="ikincil-btn" id="btn-bitis-cik">Ana Ekran</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AYARLAR ============ -->
+<section class="ekran" id="ekran-ayarlar">
+  <header class="ust-bar">
+    <button class="ikon-btn" id="btn-ayarlar-cik">←</button>
+    <div class="marka-kucuk">Ayarlar</div>
+    <span></span>
+  </header>
+  <main class="ana-govde dar">
+    <h2 class="bolum-baslik">Çalışma</h2>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">Birikimli öğrenme</div>
+        <div class="ayar-alt">Açıkken cevapladığın objeler haritada kalır ve üst üste birikir. Kapalıyken sonraki soruya geçince kaybolur.</div>
+      </div>
+      <button class="toggle" id="toggle-birikimli" role="switch"><span></span></button>
+    </div>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">Yanlış cevapta bekleme süresi</div>
+        <div class="ayar-alt">Yanlış cevapladığında doğrusunun haritada kaldığı süre.</div>
+      </div>
+      <div class="ayar-eylem">
+        <select class="secici" id="sure-sec"></select>
+      </div>
+    </div>
+
+    <h2 class="bolum-baslik">Geri bildirim</h2>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">Ses</div>
+        <div class="ayar-alt">Doğru/yanlış cevapta, düğmelere basınca, süre dolmadan önce ve konu bitince kısa sesler çalar.</div>
+      </div>
+      <button class="toggle" id="toggle-ses" role="switch"><span></span></button>
+    </div>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">Titreşim</div>
+        <div class="ayar-alt">Doğru ve yanlış cevapta kısa titreşim. <b>iPhone'da çalışmaz</b> — Safari tarayıcı titreşimini desteklemiyor; Android ve bilgisayarda çalışır.</div>
+      </div>
+      <button class="toggle" id="toggle-titresim" role="switch"><span></span></button>
+    </div>
+
+    <h2 class="bolum-baslik">İlerleme</h2>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">İlerlememi sil</div>
+        <div class="ayar-alt">Seçtiğin konuda kaldığın yer ve doğru/yanlış kayıtların silinir.</div>
+      </div>
+      <div class="ayar-eylem">
+        <select class="secici" id="ilerleme-konu-sec"></select>
+        <button class="tehlike-btn" id="btn-konu-ilerleme-sil">Sil</button>
+      </div>
+    </div>
+
+    <div class="ayar-satir">
+      <div class="ayar-yazi">
+        <div class="ayar-ad">Bu profilin ilerlemesini sil</div>
+        <div class="ayar-alt">Tüm konulardaki kayıtlar ve istatistikler silinir. Konuların ve objelerin durur.</div>
+      </div>
+      <button class="tehlike-btn" id="btn-ilerleme-sil">Temizle</button>
+    </div>
+  </main>
+</section>
+
+<!-- ============ ÜST KONULAR ============ -->
+<section class="ekran" id="ekran-ust-konular">
+  <header class="ust-bar">
+    <button class="ikon-btn" id="btn-ust-konu-cik">←</button>
+    <div class="marka-kucuk">Üst Konular</div>
+    <button class="mini-ekle" id="btn-ust-konu-ekle" title="Yeni üst konu">+</button>
+  </header>
+  <main class="ana-govde dar">
+    <p class="bos-uyari">⠿ tutamağından sürükleyerek sırala. Bir konuyu üst konunun içine sürüklersen o kutunun altına girer, dışarı çıkarırsan kapsayıcısız olur.</p>
+    <div id="ust-konu-listesi"></div>
+  </main>
+</section>
+
+<!-- ============ KONU AYARLARI ============ -->
+<section class="ekran" id="ekran-konu-ayar">
+  <header class="ust-bar">
+    <button class="ikon-btn" id="btn-konu-ayar-cik">←</button>
+    <div class="marka-kucuk">Konu Ayarları</div>
+    <div class="secici-grup">
+      <select class="secici" id="konu-ayar-sec"></select>
+      <button class="mini-ekle" id="btn-yeni-konu-ayar" title="Yeni konu">+</button>
+    </div>
+  </header>
+  <main class="ana-govde dar">
+    <div id="konu-ayar-govde"></div>
+  </main>
+</section>
+
+<!-- ============ DÜZENLE ============ -->
+<section class="ekran" id="ekran-editor">
+  <header class="ust-bar ince">
+    <button class="ikon-btn" id="btn-editor-cik">←</button>
+    <div class="editor-baslik">
+      <div class="marka-kucuk">Düzenle</div>
+      <div class="yedek-btnler">
+        <button class="metin-btn ince" id="btn-ice-aktar" title="Yedek dosyasından geri yükle">⬆ İçe aktar</button>
+        <button class="metin-btn ince" id="btn-disa-aktar" title="Her şeyin yedeğini .json olarak indir">⬇ Dışa aktar</button>
+      </div>
+    </div>
+    <span></span>
+  </header>
+  <input type="file" id="yedek-dosya" accept="application/json,.json" hidden>
+
+  <div class="editor-govde">
+    <div class="editor-harita" id="editor-harita">
+      <div class="harita-araclar" id="harita-araclar">
+        <button class="harita-arac-btn" id="btn-onizleme" title="Görünümü değiştir">⇄ <b>Düzenle</b></button>
+        <button class="harita-arac-btn" id="btn-zoom" title="Tekerlekle yakınlaştır, sürükleyerek gez">🔍 <b>Zoom pasif</b></button>
+        <button class="harita-arac-btn gizli" id="btn-zoom-sifirla" title="Haritayı tam görünüme döndür">⤢</button>
+      </div>
+    </div>
+
+    <aside class="editor-panel">
+      <!-- 1. satır: konu seçimi + konu yönetimi -->
+      <div class="panel-satir">
+        <select class="secici tam" id="editor-konu"></select>
+        <button class="ikon-btn kucuk" id="btn-konu-yonet" title="Konu sırası ve silme">⚙</button>
+      </div>
+
+      <!-- 2. satır: harita / soru -->
+      <div class="segment" id="mod-segment">
+        <button class="segment-btn secili" data-mod="harita">🗺️ Harita</button>
+        <button class="segment-btn" data-mod="soru">✏️ Soru</button>
+      </div>
+
+      <!-- 3. satır: araçlar -->
+      <div class="segment araclar" id="arac-segment">
+        <button class="segment-btn secili" data-arac="sec" title="Seç">👆</button>
+        <button class="segment-btn" data-arac="yerlestir" title="Yerleştir">📍</button>
+        <button class="segment-btn" data-arac="ciz" title="Çiz">✏️</button>
+        <button class="segment-btn" data-arac="alan" title="Alan">
+          <svg viewBox="0 0 24 24" class="alan-simge" aria-hidden="true">
+            <ellipse cx="12" cy="12" rx="9.2" ry="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
+          </svg>
+        </button>
+        <button class="segment-btn" data-arac="balon" title="Baloncuk">💬</button>
+      </div>
+
+      <div class="cizim-btnler">
+        <button class="ana-btn ince gizli" id="btn-cizim-bitir">Alanı tamamla</button>
+        <button class="ikincil-btn ince gizli" id="btn-cizim-iptal">İptal</button>
+      </div>
+
+      <!-- HARİTA MODU -->
+      <div id="panel-harita">
+        <div class="panel-bolum" id="emoji-bolumu">
+          <label class="alan-etiket">Eklenecek emoji</label>
+          <div class="secim-satir" id="emoji-secim"></div>
+          <input type="text" id="emoji-ozel" class="kucuk-alan" maxlength="6" placeholder="veya emoji yapıştır">
+          <input type="file" id="gorsel-dosya" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+        </div>
+
+        <div class="panel-bolum">
+          <div class="baslik-satir">
+            <label class="alan-etiket">Objeler <span class="sayi-rozet" id="obje-sayisi">0</span></label>
+            <div class="liste-arac">
+              <button class="mini-ekle" id="btn-obje-sec" title="Çoklu seçim">☑</button>
+              <button class="mini-ekle gizli" id="btn-obje-kopyala" title="Seçilenleri kopyala">📋</button>
+              <button class="mini-ekle gizli" id="btn-obje-yapistir" title="Yapıştır">📥</button>
+              <button class="mini-ekle" id="btn-obje-ekle" title="Yeni obje">+</button>
+            </div>
+          </div>
+          <div class="obje-listesi" id="obje-listesi"></div>
+        </div>
+
+        <!-- seçili obje paneli listenin ALTINDA: yukarıda seç, aşağıda işle -->
+        <div class="panel-bolum gizli" id="obje-panel"></div>
+      </div>
+
+      <!-- SORU MODU -->
+      <div id="panel-soru" class="gizli">
+        <div class="panel-bolum">
+          <label class="alan-etiket">Sorular <span class="sayi-rozet" id="soru-sayisi">0</span></label>
+          <div class="soru-tablo" id="soru-tablo"></div>
+          <div id="soru-ekle-alani"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ============ TELEFONU ÇEVİR ============ -->
+<div class="cevir-ortu" id="cevir-ortu">
+  <div class="cevir-ikon">📱</div>
+  <p>Harita için telefonu <b>yan çevir</b></p>
+</div>
+
+<!-- ============ PROFİL MODALI ============ -->
+<div class="modal gizli" id="modal-profil">
+  <div class="modal-kart">
+    <h3 id="modal-baslik">Yeni Profil</h3>
+    <label class="alan-etiket">Ad</label>
+    <input type="text" id="profil-ad" maxlength="18" placeholder="Örn. Onur" autocomplete="off">
+    <label class="alan-etiket">Avatar</label>
+    <div class="secim-satir" id="avatar-secim"></div>
+    <label class="alan-etiket">Renk</label>
+    <div class="secim-satir" id="renk-secim"></div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-profil-kaydet">Kaydet</button>
+      <button class="ikincil-btn" id="btn-profil-iptal">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ YENİ KONU MODALI ============ -->
+<div class="modal gizli" id="modal-konu-ekle">
+  <div class="modal-kart">
+    <h3>Yeni Konu</h3>
+    <label class="alan-etiket">Konu adı</label>
+    <input type="text" id="yeni-konu-ad" class="kucuk-alan" maxlength="28" placeholder="Örn. Barajlar" autocomplete="off">
+    <label class="alan-etiket">Kısa açıklama</label>
+    <input type="text" id="yeni-konu-aciklama" class="kucuk-alan" maxlength="40" placeholder="Örn. Barajlar hangi ilde?" autocomplete="off">
+    <label class="alan-etiket">Simge</label>
+    <div class="secim-satir" id="konu-ikon-secim"></div>
+    <label class="alan-etiket">Renk</label>
+    <div class="secim-satir" id="konu-renk-secim"></div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-konu-ekle-kaydet">Konuyu Ekle</button>
+      <button class="ikincil-btn" id="btn-konu-ekle-iptal">İptal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ONAY KUTUSU ============ -->
+<div class="modal gizli" id="modal-onay">
+  <div class="modal-kart dar-kart">
+    <div class="onay-ikon" id="onay-ikon">⚠️</div>
+    <h3 id="onay-baslik">Emin misin?</h3>
+    <p class="ortu-alt" id="onay-mesaj"></p>
+    <div class="modal-btnler">
+      <button class="tehlike-btn buyuk" id="btn-onay-evet">Sil</button>
+      <button class="ikincil-btn" id="btn-onay-hayir">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ İSTATİSTİK ============ -->
+<div class="modal gizli" id="modal-istatistik">
+  <div class="modal-kart genis-kart">
+    <div class="modal-ust">
+      <h3>İstatistikler</h3>
+      <button class="ikon-btn kucuk" id="btn-istatistik-kapat">✕</button>
+    </div>
+    <div id="istatistik-govde"></div>
+  </div>
+</div>
+
+<div class="bildirim" id="bildirim"></div>
+
+<script src="js/harita-turkiye.js?s=30"></script>
+<script src="js/il-merkez.js?s=30"></script>
+<script src="js/komsular.js?s=30"></script>
+<script src="js/hazir-icerik.js?s=30"></script>
+<script src="js/data.js?s=30"></script>
+<script src="js/app.js?s=30"></script>
+<script src="js/editor.js?s=30"></script>
+<script src="js/konu-duzen.js?s=30"></script>
+</body>
+</html>
