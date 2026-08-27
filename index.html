@@ -11,36 +11,16 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=31">
+<link rel="stylesheet" href="css/style.css?s=32">
 </head>
 <body>
 
 <!-- ============ PROFİL EKRANI ============ -->
-<section class="ekran aktif" id="ekran-profil">
+<section class="ekran aktif" id="ekran-acilis">
   <div class="profil-sahne">
     <h1 class="marka">Coğrafya<span>m</span></h1>
     <p class="marka-alt">Coğrafyayı haritaya bakarak çalış</p>
-
-    <div class="giris-kutu" id="giris-kutu">
-      <button class="google-btn" id="btn-google-giris">
-        <svg viewBox="0 0 18 18" aria-hidden="true" class="google-logo">
-          <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/>
-          <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.35 0-4.33-1.58-5.04-3.71H.96v2.33A9 9 0 0 0 9 18z"/>
-          <path fill="#FBBC05" d="M3.96 10.71a5.41 5.41 0 0 1 0-3.42V4.96H.96a9 9 0 0 0 0 8.08l3-2.33z"/>
-          <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.96l3 2.33C4.67 5.16 6.65 3.58 9 3.58z"/>
-        </svg>
-        <span>Google ile giriş yap</span>
-      </button>
-      <p class="giris-alt" id="giris-alt">
-        Konularını ve ilerlemeni bütün cihazlarında görebilmek için giriş yap.
-      </p>
-    </div>
-
-    <div class="giris-kutu gizli" id="giris-bekle">
-      <div class="yukleniyor"></div>
-      <p class="giris-alt">Bağlanıyor…</p>
-    </div>
-
+    <div class="giris-kutu"><div class="yukleniyor"></div></div>
     <p class="giris-alt kucuk" id="giris-yerel-not"></p>
   </div>
 </section>
@@ -66,9 +46,9 @@
       </a>
     </div>
     <div class="ust-sag">
-      <button class="profil-rozet" id="btn-aktif-profil">
-        <span class="rozet-avatar" id="rozet-avatar">🙂</span>
-        <span id="rozet-ad">Hesap</span>
+      <button class="profil-rozet" id="btn-bulut" title="Bulut durumu">
+        <span class="rozet-avatar" id="bulut-simge">☁</span>
+        <span id="bulut-ad">Bulut</span>
       </button>
       <button class="ikon-btn kucuk" id="btn-ayarlar" title="Ayarlar">⚙</button>
     </div>
@@ -387,18 +367,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=31"></script>
-<script src="js/il-merkez.js?s=31"></script>
-<script src="js/komsular.js?s=31"></script>
-<script src="js/hazir-icerik.js?s=31"></script>
+<script src="js/harita-turkiye.js?s=32"></script>
+<script src="js/il-merkez.js?s=32"></script>
+<script src="js/komsular.js?s=32"></script>
+<script src="js/hazir-icerik.js?s=32"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
-<script src="js/vendor/firebase-auth-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=31"></script>
-<script src="js/data.js?s=31"></script>
-<script src="js/app.js?s=31"></script>
-<script src="js/bulut.js?s=31"></script>
-<script src="js/editor.js?s=31"></script>
-<script src="js/konu-duzen.js?s=31"></script>
+<script src="js/firebase-config.js?s=32"></script>
+<script src="js/data.js?s=32"></script>
+<script src="js/app.js?s=32"></script>
+<script src="js/bulut.js?s=32"></script>
+<script src="js/editor.js?s=32"></script>
+<script src="js/konu-duzen.js?s=32"></script>
 </body>
 </html>

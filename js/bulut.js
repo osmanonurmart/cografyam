@@ -1,52 +1,47 @@
 /* ==========================================================
-   Coğrafyam — bulut senkronu (Firebase Auth + Firestore)
+   Coğrafyam — bulut senkronu (Firestore, giriş yok)
 
-   Tasarım kararı: localStorage kaldırılmadı, YEREL AYNA olarak kaldı.
-   Uygulamanın geri kalanı hâlâ senkron `Depo.oku` ile okuyor; bu katman
-   yalnızca iki yönü bağlıyor:
+   Kart Kutusu ile aynı mantık: oturum açma yok, herkes aynı veriyi
+   görür. Uygulama açılır açılmaz Firestore'a bağlanır; konular,
+   objeler ve ilerleme bütün cihazlarda ortaktır.
 
-     bulut -> yerel   onSnapshot dinleyicileri geleni localStorage'a yazar
-                      ve ekranı tazeler
-     yerel -> bulut   Depo.yaz her yazdığında burayı dürter, 800 ms
-                      bekletip toplu gönderir
+   localStorage kaldırılmadı, YEREL AYNA olarak kaldı. Uygulamanın geri
+   kalanı hâlâ senkron `Depo.oku` ile okuyor; bu katman iki yönü bağlar:
 
-   Böylece tüm ekranlar olduğu gibi çalışmaya devam ediyor ve çevrimdışıyken
+     bulut -> yerel   onSnapshot geleni localStorage'a yazar, ekranı tazeler
+     yerel -> bulut   Depo.yaz dürtülür, 800 ms bekletip toplu gönderir
+
+   Böylece bütün ekranlar dokunulmadan çalışıyor ve internet yokken
    uygulama yerel aynadan okumaya devam ediyor.
 
-   Veri modeli:
-     konular/{id}                     içerik — herkes okur, yönetici yazar
-     ustKonular/{id}                  içerik
-     gorseller/{id}                   içerik (palet görselleri)
-     yoneticiler/{uid}                rol listesi, istemci yazamaz
-     kullanicilar/{uid}               hesap bilgisi
-     kullanicilar/{uid}/veri/ilerleme kişisel
-     kullanicilar/{uid}/veri/ayarlar  kişisel
-     kullanicilar/{uid}/veri/gunluk   kişisel
+   Koleksiyonlar:
+     konular/{id}      konu, objeleri ve soruları
+     ustKonular/{id}   ana ekran grupları
+     gorseller/{id}    palet görselleri
+     ayarlar/genel     genel ayarlar
+     ilerleme/genel    konu başına kalınan yer ve sonuçlar
+     gunluk/genel      günlük soru sayacı
    ========================================================== */
 
 const Bulut = {
-  acik: false,          // Firebase yüklendi ve başlatıldı mı
-  kullanici: null,      // firebase.User
-  yonetici: false,      // içerik yazma yetkisi
-  ilkYuklemeBitti: false,
+  acik: false,
+  hazir: false,
   _db: null,
-  _auth: null,
   _dinleyiciler: [],
   _bekleyen: new Set(),
   _zaman: null,
-  _uygulanan: false,    // snapshot uygularken Depo.yaz döngüsünü kes
+  _uygulanan: false,    // snapshot uygularken geri gönderme döngüsünü kes
+  _uyardi: false,
 
-  /* ---------------- başlatma ---------------- */
   baslat() {
     if (typeof firebase === "undefined" || typeof FIREBASE_YAPILANDIRMA === "undefined") {
       console.warn("Firebase yüklenemedi — uygulama yalnızca bu cihazda çalışacak");
       return false;
     }
     firebase.initializeApp(FIREBASE_YAPILANDIRMA);
-    this._auth = firebase.auth();
     this._db = firebase.firestore();
 
-    /* Çevrimdışı kalıcılık: uygulama internetsizken de Firestore'dan okur,
+    /* Çevrimdışı kalıcılık: internetsizken de Firestore'dan okunur,
        yazılanlar sıraya girer ve bağlantı gelince gönderilir. */
     this._db.enablePersistence({ synchronizeTabs: true }).catch(e => {
       if (e.code === "failed-precondition") console.warn("Çevrimdışı kalıcılık: birden fazla sekme açık");
@@ -54,84 +49,34 @@ const Bulut = {
     });
 
     this.acik = true;
-    this._auth.onAuthStateChanged(k => this._oturumDegisti(k));
+    this._ilkYukleme();
     return true;
   },
 
-  /* ---------------- oturum ---------------- */
-  async girisYap() {
-    const saglayici = new firebase.auth.GoogleAuthProvider();
-    saglayici.setCustomParameters({ prompt: "select_account" });
+  /* Uygulama açılırken: bulutta içerik varsa onu bekle, yoksa bu
+     cihazdakini yükle. Sonra dinlemeye geç. */
+  async _ilkYukleme() {
     try {
-      await this._auth.signInWithPopup(saglayici);
-    } catch (e) {
-      if (e.code === "auth/popup-closed-by-user" || e.code === "auth/cancelled-popup-request") return;
-      if (e.code === "auth/unauthorized-domain") {
-        bildir("Bu adres Firebase'de yetkili değil — Authentication › Settings › Authorized domains");
-        return;
+      const anlik = await this._db.collection("konular").get();
+      const bulutBos = anlik.empty;
+      const yerel = Depo.oku("kutuphane", []);
+
+      if (bulutBos && yerel.length) {
+        // ilk kurulum: bu cihazdaki içerik buluta taşınır
+        await this.tumIcerigiGonder(true);
       }
-      /* Pop-up engelliyse yönlendirmeli akışa düş */
-      if (e.code === "auth/popup-blocked") { this._auth.signInWithRedirect(saglayici); return; }
-      bildir("Giriş yapılamadı: " + (e.message || e.code));
+    } catch (e) {
+      console.warn("İlk yükleme başarısız:", e);
+      bildir("Buluta bağlanılamadı — bu cihazda çalışılıyor");
     }
-  },
-
-  async cikisYap() {
-    this._dinleyicileriKapat();
-    await this._auth.signOut();
-    location.reload();
-  },
-
-  async _oturumDegisti(k) {
-    this._dinleyicileriKapat();
-    this.kullanici = k;
-    this.yonetici = false;
-    this.ilkYuklemeBitti = false;
-
-    if (!k) { girisEkraniniGoster(); return; }
-
-    // rol: yoneticiler/{uid} belgesi varsa içerik yazabilir
-    try {
-      const y = await this._db.collection("yoneticiler").doc(k.uid).get();
-      this.yonetici = y.exists;
-    } catch (e) { this.yonetici = false; }
-
-    await this._hesabiYaz(k);
-    await this._ilkEsitleme();
     this._dinlemeyeBasla();
-    oturumHazir(k);
-  },
-
-  _hesabiYaz(k) {
-    return this._db.collection("kullanicilar").doc(k.uid).set({
-      ad: k.displayName || "",
-      eposta: k.email || "",
-      foto: k.photoURL || "",
-      sonGiris: Date.now()
-    }, { merge: true }).catch(e => console.warn("Hesap yazılamadı", e));
-  },
-
-  /* ---------------- ilk eşitleme ----------------
-     Bulutta içerik yoksa ve bu cihazda varsa, yöneticiye yükleme teklifi
-     yapılır. Tersi durumda bulut yereli ezer — bulut daima kaynaktır. */
-  async _ilkEsitleme() {
-    const anlik = await this._db.collection("konular").limit(1).get();
-    const bulutBos = anlik.empty;
-    const yerel = Depo.oku("kutuphane", []);
-
-    if (bulutBos && this.yonetici && yerel.length) {
-      const tamam = await onay(
-        `Bulutta henüz içerik yok. Bu cihazdaki ${yerel.length} konuyu buluta yükleyeyim mi?\n\n` +
-        `Yükledikten sonra bütün cihazlarında aynı konular görünür.`,
-        { baslik: "İçeriği buluta taşı", ikon: "☁", evet: "Yükle", tehlikeli: false });
-      if (tamam) await this.tumIcerigiGonder();
-    }
+    this.hazir = true;
+    bulutHazir();
   },
 
   /* ---------------- bulut -> yerel ---------------- */
   _dinlemeyeBasla() {
-    const uid = this.kullanici.uid;
-    const ekle = (d) => this._dinleyiciler.push(d);
+    const ekle = d => this._dinleyiciler.push(d);
 
     ekle(this._db.collection("konular").onSnapshot(s => {
       const konular = s.docs.map(d => Object.assign({ id: d.id }, d.data()));
@@ -150,31 +95,22 @@ const Bulut = {
     ekle(this._db.collection("gorseller").onSnapshot(s => {
       const g = s.docs.map(d => ({ id: d.id, ad: d.data().ad, veri: d.data().veri }));
       const p = Depo.oku("palet", {}) || {};
-      if (!g.length && (p.gorseller || []).length) return;   // bkz. _bosBulutuYoksay
+      if (!g.length && (p.gorseller || []).length) return;
       this._yerelYaz("palet", { silinen: p.silinen || [], gorseller: g });
     }, e => this._hata("gorseller", e)));
 
-    const veri = this._db.collection("kullanicilar").doc(uid).collection("veri");
-    ekle(veri.doc("ilerleme").onSnapshot(d => {
-      if (d.exists) this._yerelYaz("ilerleme", d.data().kayit || {});
-    }, e => this._hata("ilerleme", e)));
-    ekle(veri.doc("ayarlar").onSnapshot(d => {
-      if (d.exists) this._yerelYaz("ayarlar", d.data().kayit || {});
-    }, e => this._hata("ayarlar", e)));
-    ekle(veri.doc("gunluk").onSnapshot(d => {
-      if (d.exists) this._yerelYaz("gunluk", d.data().kayit || {});
-    }, e => this._hata("gunluk", e)));
+    TEKIL_BELGELER.forEach(([anahtar, koleksiyon]) => {
+      ekle(this._db.collection(koleksiyon).doc("genel").onSnapshot(d => {
+        if (d.exists) this._yerelYaz(anahtar, d.data().kayit || {});
+      }, e => this._hata(koleksiyon, e)));
+    });
   },
 
   /* Bulut boş, yerelde içerik var: yereli SİLME.
-     Bu durum iki şekilde oluşur — henüz hiçbir şey yüklenmemiştir ya da
-     kullanıcı yönetici olmadığı için yükleme yapılamamıştır. İkisinde de
-     boş listeyi yerele yazmak, kişinin bu cihazdaki bütün konularını
-     silmek demek olurdu. Bulut dolduğu anda normal akış devam eder. */
+     Boş listeyi yerele yazmak, bu cihazdaki bütün konuları silmek olurdu. */
   _bosBulutuYoksay(anahtar, gelen) {
     if (gelen.length) return false;
-    const yerel = Depo.oku(anahtar, []);
-    if (!yerel.length) return false;
+    if (!Depo.oku(anahtar, []).length) return false;
     if (!this._uyardi) {
       this._uyardi = true;
       bildir("Bulutta içerik yok — bu cihazdaki konular korundu");
@@ -187,8 +123,6 @@ const Bulut = {
     if (e && e.code === "permission-denied") bildir("Bulut izni yok: " + nerede);
   },
 
-  /* Snapshot'tan geleni yerel aynaya yazar ve ekranı tazeler.
-     `_uygulanan` bayrağı, bu yazmanın tekrar buluta gönderilmesini engeller. */
   _yerelYaz(anahtar, deger) {
     this._uygulanan = true;
     try {
@@ -201,11 +135,9 @@ const Bulut = {
     bulutVerisiGeldi(anahtar);
   },
 
-  /* ---------------- yerel -> bulut ----------------
-     Depo.yaz her çağrıldığında burası dürtülür. Aynı anahtar arka arkaya
-     yazılırsa (kaydırıcı sürüklemesi gibi) tek gönderiye iner. */
+  /* ---------------- yerel -> bulut ---------------- */
   degisti(anahtar) {
-    if (!this.acik || !this.kullanici || this._uygulanan) return;
+    if (!this.acik || this._uygulanan) return;
     if (!BULUT_ANAHTARLARI.includes(anahtar)) return;
     this._bekleyen.add(anahtar);
     clearTimeout(this._zaman);
@@ -217,18 +149,11 @@ const Bulut = {
     this._bekleyen.clear();
     for (const a of anahtarlar) {
       try { await this._anahtariGonder(a); }
-      catch (e) {
-        console.warn("Buluta gönderilemedi:", a, e);
-        if (e && e.code === "permission-denied" && ICERIK_ANAHTARLARI.includes(a)) {
-          bildir("İçeriği değiştirme yetkin yok — bu cihazda kaldı");
-        }
-      }
+      catch (e) { console.warn("Buluta gönderilemedi:", a, e); }
     }
   },
 
-  async _anahtariGonder(anahtar) {
-    const uid = this.kullanici.uid;
-
+  _anahtariGonder(anahtar) {
     if (anahtar === "kutuphane")  return this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []));
     if (anahtar === "ustKonular") return this._koleksiyonEsitle("ustKonular", Depo.oku("ustKonular", []));
     if (anahtar === "palet") {
@@ -236,17 +161,13 @@ const Bulut = {
       return this._koleksiyonEsitle("gorseller",
         (p.gorseller || []).map(g => ({ id: g.id, ad: g.ad, veri: g.veri })));
     }
-
-    const veri = this._db.collection("kullanicilar").doc(uid).collection("veri");
-    if (anahtar === "ilerleme") return veri.doc("ilerleme").set({ kayit: Depo.oku("ilerleme", {}) });
-    if (anahtar === "ayarlar")  return veri.doc("ayarlar").set({ kayit: Depo.oku("ayarlar", {}) });
-    if (anahtar === "gunluk")   return veri.doc("gunluk").set({ kayit: Depo.oku("gunluk", {}) });
+    const tekil = TEKIL_BELGELER.find(t => t[0] === anahtar);
+    if (tekil) return this._db.collection(tekil[1]).doc("genel").set({ kayit: Depo.oku(anahtar, {}) });
   },
 
   /* Yerel listeyi koleksiyonla eşitler: eklenen/değişen yazılır,
      yerelde olmayan bulut belgesi silinir. */
   async _koleksiyonEsitle(koleksiyon, liste) {
-    if (!this.yonetici) return;
     const ref = this._db.collection(koleksiyon);
     const mevcut = await ref.get();
     const yerelIdler = new Set(liste.map(x => x.id));
@@ -262,22 +183,20 @@ const Bulut = {
     await yigin.commit();
   },
 
-  async tumIcerigiGonder() {
+  async tumIcerigiGonder(sessiz) {
     await this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []));
     await this._koleksiyonEsitle("ustKonular", Depo.oku("ustKonular", []));
     const p = Depo.oku("palet", {});
     await this._koleksiyonEsitle("gorseller", (p.gorseller || []).map(g => ({ id: g.id, ad: g.ad, veri: g.veri })));
-    bildir("İçerik buluta yüklendi");
-  },
-
-  _dinleyicileriKapat() {
-    this._dinleyiciler.forEach(d => { try { d(); } catch (e) {} });
-    this._dinleyiciler = [];
+    for (const [anahtar, koleksiyon] of TEKIL_BELGELER) {
+      await this._db.collection(koleksiyon).doc("genel").set({ kayit: Depo.oku(anahtar, {}) });
+    }
+    if (!sessiz) bildir("İçerik buluta yüklendi");
   }
 };
 
-/* Buluta taşınan anahtarlar. `pano` (kopyala-yapıştır) bilinçli olarak
-   yerelde bırakıldı — cihazlar arası taşınmasının anlamı yok. */
-const ICERIK_ANAHTARLARI = ["kutuphane", "ustKonular", "palet"];
-const KISISEL_ANAHTARLAR = ["ilerleme", "ayarlar", "gunluk"];
-const BULUT_ANAHTARLARI  = [...ICERIK_ANAHTARLARI, ...KISISEL_ANAHTARLAR];
+/* Tek belgede duran kayıtlar: koleksiyon/genel */
+const TEKIL_BELGELER = [["ayarlar", "ayarlar"], ["ilerleme", "ilerleme"], ["gunluk", "gunluk"]];
+
+/* `pano` (kopyala-yapıştır) bilinçli olarak yerelde bırakıldı. */
+const BULUT_ANAHTARLARI = ["kutuphane", "ustKonular", "palet", "ayarlar", "ilerleme", "gunluk"];

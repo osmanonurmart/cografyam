@@ -613,10 +613,9 @@ function ayarlariKaydet() {
 /* ----------------------------------------------------------
    PROFİLLER
 ---------------------------------------------------------- */
-/* Hesap = profil. Google oturumu açıldığında bulut.js `oturumHazir` ile
-   tek profil oluşturur; bu yüzden eski çoklu-profil ekranı kaldırıldı.
-   İlerleme kayıtları hâlâ profil kimliğine göre tutuluyor — o kimlik
-   artık Firebase kullanıcı kimliği (uid). */
+/* Giriş yok; tek ortak kimlik var (bkz. ORTAK_KIMLIK). İlerleme
+   kayıtları hâlâ bu kimliğe göre tutuluyor, böylece alttaki kod
+   olduğu gibi kaldı. */
 function aktifProfil() {
   return durum.profiller.find(p => p.id === durum.aktifProfilId) || null;
 }
@@ -1451,19 +1450,7 @@ function objeKonum(objeler, obje) {
    ========================================================== */
 function anaEkranaGec() {
   const p = aktifProfil();
-  if (!p) { girisEkraniniGoster(); return; }
-
-  const avatar = $("#rozet-avatar");
-  if (p.foto) {
-    avatar.innerHTML = `<img src="${guvenli(p.foto)}" alt="" referrerpolicy="no-referrer">`;
-    avatar.style.background = "transparent";
-  } else {
-    avatar.textContent = p.avatar;
-    avatar.style.background = p.renk;
-  }
-  $("#rozet-ad").textContent = p.ad;
-  // öğrenci rolünde düzenleme kutusu gizlenir; asıl koruma firestore.rules'ta
-  $("#btn-duzenle").parentElement.classList.toggle("gizli", !adminMi());
+  if (!p) return;
   ozetiCiz();
   konulariCiz();
   durum.ekranGecmisi = [];
@@ -2511,8 +2498,7 @@ function otomatikSoru(o, konu) {
    ========================================================== */
 function olaylariBagla() {
   /* giriş / hesap */
-  $("#btn-google-giris").addEventListener("click", () => Bulut.girisYap());
-  $("#btn-aktif-profil").addEventListener("click", hesabiGoster);
+  $("#btn-bulut").addEventListener("click", bulutBilgisi);
 
   /* ana ekran */
   $("#btn-ayarlar").addEventListener("click", ayarEkraniCiz);
@@ -2611,52 +2597,35 @@ function olaylariBagla() {
    BAŞLAT
    ========================================================== */
 /* ==========================================================
-   OTURUM KÖPRÜSÜ — bulut.js buradaki üç fonksiyonu çağırır
+   BULUT KÖPRÜSÜ — bulut.js buradaki iki fonksiyonu çağırır
    ========================================================== */
 
-/* Giriş yapılmamış: giriş ekranını göster */
-function girisEkraniniGoster() {
-  $("#giris-bekle").classList.add("gizli");
-  $("#giris-kutu").classList.remove("gizli");
-  durum.profiller = [];
-  durum.aktifProfilId = null;
-  ekranGoster("profil", false);
-}
+/* Giriş yok: herkes aynı veriyi görür, kullanıcı ayrımı yapılmaz.
+   İlerleme kayıtları hâlâ bir kimliğe göre tutuluyor; o kimlik artık
+   sabit "ortak". */
+const ORTAK_KIMLIK = "ortak";
 
-/* Giriş yapıldı: Google hesabı tek profil olarak kullanılır.
-   Alttaki kod hâlâ profil kimliğine göre ilerleme tuttuğu için
-   profil dizisini uid ile dolduruyoruz — hesap = profil. */
-function oturumHazir(k) {
-  durum.profiller = [{
-    id: k.uid,
-    ad: k.displayName || (k.email || "").split("@")[0] || "Hesap",
-    avatar: "🙂",
-    foto: k.photoURL || "",
-    renk: RENKLER[0],
-    rol: Bulut.yonetici ? "admin" : "ogrenci"
-  }];
-  durum.aktifProfilId = k.uid;
-
+function bulutHazir() {
   ayarlariYukle();
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
-  Bulut.ilkYuklemeBitti = true;
+  bulutDurumu(true);
   anaEkranaGec();
 }
 
 /* Buluttan yeni veri indi: yerel ayna güncellendi, ekranı tazele */
 function bulutVerisiGeldi(anahtar) {
-  if (!Bulut.ilkYuklemeBitti) return;
+  if (typeof Bulut === "undefined" || !Bulut.hazir) return;
 
   if (anahtar === "ayarlar") ayarlariYukle();
   if (anahtar === "palet") paletYukle();
   if (anahtar === "kutuphane") durum.kutuphane = Depo.oku("kutuphane", []);
   if (anahtar === "ustKonular") durum.ustKonular = Depo.oku("ustKonular", []);
 
-  const aktifEkran = ($("section.ekran.aktif") || {}).id;
-  if (aktifEkran === "ekran-ana") { ozetiCiz(); konulariCiz(); }
-  else if (aktifEkran === "ekran-editor" && typeof editorTazele === "function") {
+  const aktif = ($("section.ekran.aktif") || {}).id;
+  if (aktif === "ekran-ana") { ozetiCiz(); konulariCiz(); }
+  else if (aktif === "ekran-editor" && typeof editorTazele === "function") {
     konuSeciciDoldur($("#editor-konu"));
     $("#editor-konu").value = durum.editorKonuId;
     if (typeof emojileriCiz === "function") emojileriCiz();
@@ -2664,55 +2633,53 @@ function bulutVerisiGeldi(anahtar) {
   }
 }
 
-/* Hesap kutusu: kim girişli, yetkisi ne, çıkış ve UID.
-   UID lazım çünkü ilk yöneticiyi Firebase konsolundan elle eklemek
-   gerekiyor: yoneticiler koleksiyonuna bu kimlikle bir belge açılır. */
-async function hesabiGoster() {
-  const p = aktifProfil();
-  if (!p) return;
-  const bulutta = typeof Bulut !== "undefined" && Bulut.kullanici;
-  const uid = bulutta ? Bulut.kullanici.uid : "—";
-  const rol = adminMi() ? "Yönetici — konuları düzenleyebilirsin"
-                        : "Öğrenci — konular salt okunur";
-
-  const cik = await onay(
-    `${p.ad}\n${bulutta ? Bulut.kullanici.email : "Yerel kip (bulut yok)"}\n\n` +
-    `${rol}\n\nKullanıcı kimliği:\n${uid}`,
-    { baslik: "Hesap", ikon: "👤",
-      evet: bulutta ? "Çıkış yap" : "Kapat",
-      hayir: "Kapat", tehlikeli: !!bulutta });
-
-  if (cik && bulutta) Bulut.cikisYap();
+/* Bulut kutusu: neyin ortak olduğunu anlatır */
+function bulutBilgisi() {
+  const bagli = typeof Bulut !== "undefined" && Bulut.acik;
+  onay(
+    bagli
+      ? "Konular, objeler ve ilerlemen buluta kayıtlı.\n\n" +
+        "Hangi cihazdan açarsan aç aynısını görürsün; bir değişiklik yaptığında " +
+        "diğer cihazlar birkaç saniye içinde güncellenir.\n\n" +
+        "İnternet yokken de çalışır: yazdıkların sıraya girer, bağlantı gelince gönderilir."
+      : "Buluta bağlanılamadı.\n\nUygulama çalışmaya devam ediyor ama yaptığın " +
+        "değişiklikler yalnızca bu cihazda kalıyor.",
+    { baslik: bagli ? "Bulut bağlı" : "Yerel kip", ikon: bagli ? "☁" : "⛌",
+      evet: "Tamam", hayir: "Kapat", tehlikeli: false });
 }
 
+function bulutDurumu(bagli) {
+  $("#bulut-simge").textContent = bagli ? "☁" : "⛌";
+  $("#bulut-ad").textContent = bagli ? "Bulut" : "Yerel";
+  $("#btn-bulut").title = bagli
+    ? "Konular ve ilerleme bütün cihazlarında ortak"
+    : "Buluta bağlanılamadı — değişiklikler yalnızca bu cihazda";
+}
+
+/* Herkes düzenleyebilir — giriş olmadığı için rol ayrımı yok */
+function adminMi() { return true; }
+
 function baslat() {
+  durum.profiller = [{ id: ORTAK_KIMLIK, ad: "Coğrafyam", avatar: "🙂", renk: RENKLER[0], rol: "admin" }];
+  durum.aktifProfilId = ORTAK_KIMLIK;
   olaylariBagla();
 
   if (location.protocol !== "file:" && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
 
-  /* Bulut açılırsa oturum durumu ekranı belirler. Firebase yüklenemezse
-     (dosyadan açma, ağ yok, SDK engelli) uygulama eskisi gibi yalnızca
-     bu cihazda çalışmaya devam eder — veri kaybolmaz. */
-  $("#giris-kutu").classList.add("gizli");
-  $("#giris-bekle").classList.remove("gizli");
-
+  /* Firebase yüklenemezse (dosyadan açma, ağ yok, SDK engelli) uygulama
+     eskisi gibi yalnızca bu cihazda çalışır — veri kaybolmaz. */
   if (typeof Bulut !== "undefined" && Bulut.baslat()) return;
-
-  yerelKipeDus("Buluta bağlanılamadı — bu oturum yalnızca bu cihazda çalışıyor.");
+  yerelKipeDus();
 }
 
-/* Firebase olmadan çalışma: tek yerel profil, senkron yok */
-function yerelKipeDus(mesaj) {
-  $("#giris-bekle").classList.add("gizli");
-  $("#giris-yerel-not").textContent = mesaj || "";
-  durum.profiller = [{ id: "yerel", ad: "Bu cihaz", avatar: "🙂", renk: RENKLER[0], rol: "admin" }];
-  durum.aktifProfilId = "yerel";
+function yerelKipeDus() {
   ayarlariYukle();
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
+  bulutDurumu(false);
   anaEkranaGec();
 }
 
