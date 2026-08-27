@@ -2,20 +2,25 @@
    Strateji: ÖNCE AĞ, olmazsa önbellek.
    Böylece dosyaları her güncellediğimizde tarayıcı en yeni sürümü alır;
    internet yoksa son indirilen sürümle çalışmaya devam eder. */
-const SURUM = "cografyam-v31";
+const SURUM = "cografyam-v32";
 
 const DOSYALAR = [
   "./",
   "./index.html",
-  "./css/style.css?s=30",
-  "./js/harita-turkiye.js?s=30",
-  "./js/il-merkez.js?s=30",
-  "./js/komsular.js?s=30",
-  "./js/hazir-icerik.js?s=30",
-  "./js/data.js?s=30",
-  "./js/app.js?s=30",
-  "./js/editor.js?s=30",
-  "./js/konu-duzen.js?s=30",
+  "./css/style.css?s=31",
+  "./js/harita-turkiye.js?s=31",
+  "./js/il-merkez.js?s=31",
+  "./js/komsular.js?s=31",
+  "./js/hazir-icerik.js?s=31",
+  "./js/vendor/firebase-app-compat.js",
+  "./js/vendor/firebase-auth-compat.js",
+  "./js/vendor/firebase-firestore-compat.js",
+  "./js/firebase-config.js?s=31",
+  "./js/data.js?s=31",
+  "./js/app.js?s=31",
+  "./js/bulut.js?s=31",
+  "./js/editor.js?s=31",
+  "./js/konu-duzen.js?s=31",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"

@@ -1,0 +1,82 @@
+rules_version = '2';
+
+// Coğrafyam — Firestore güvenlik kuralları
+//
+// İki tür veri var:
+//   İÇERİK   konular, üst konular, palet görselleri.
+//            Herkes okur; yalnızca yöneticiler yazar.
+//   KİŞİSEL  ilerleme, ayarlar, günlük sayaç.
+//            Yalnızca sahibi okur ve yazar.
+//
+// Yönetici olmak: yoneticiler/{uid} belgesinin var olması yeterli.
+// Bu koleksiyona istemciden YAZILAMAZ — kimse kendini yönetici yapamaz.
+// İlk yöneticiyi Firebase konsolundan elle eklemek gerekir.
+//
+// Yayına almak için:  firebase deploy --only firestore:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function girisli() {
+      return request.auth != null;
+    }
+
+    function sahibi(uid) {
+      return girisli() && request.auth.uid == uid;
+    }
+
+    function yoneticiMi() {
+      return girisli() &&
+             exists(/databases/$(database)/documents/yoneticiler/$(request.auth.uid));
+    }
+
+    // Makul boyutta metin — bozuk ya da devasa kayıt yazılmasın
+    function makulMetin(deger, enFazla) {
+      return deger is string && deger.size() <= enFazla;
+    }
+
+    /* ---------- İÇERİK: herkes okur, yönetici yazar ---------- */
+
+    match /konular/{konuId} {
+      allow read: if true;
+      allow write: if yoneticiMi()
+                   && makulMetin(request.resource.data.ad, 120);
+    }
+
+    match /ustKonular/{ustId} {
+      allow read: if true;
+      allow write: if yoneticiMi()
+                   && makulMetin(request.resource.data.ad, 120);
+    }
+
+    // Palet görselleri. `veri` bir data: URL — 128x128 PNG ~10-40 KB.
+    // Firestore belge sınırı 1 MB; 700 KB üstünü baştan reddediyoruz.
+    match /gorseller/{gorselId} {
+      allow read: if true;
+      allow write: if yoneticiMi()
+                   && makulMetin(request.resource.data.ad, 120)
+                   && makulMetin(request.resource.data.veri, 700000);
+    }
+
+    // Yönetici listesi: istemci kendi rolünü bilmek için okur, asla yazamaz.
+    match /yoneticiler/{uid} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    /* ---------- KİŞİSEL: yalnızca sahibi ---------- */
+
+    match /kullanicilar/{uid} {
+      allow read, write: if sahibi(uid);
+
+      match /veri/{belge} {
+        allow read, write: if sahibi(uid);
+      }
+    }
+
+    // Yukarıda eşleşmeyen her şey kapalı
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

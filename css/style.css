@@ -1022,3 +1022,25 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 #gorsel-ad-satir .kucuk-alan{flex:1;min-width:0}
 /* obje listesinde görsel küçük resmi emoji yüksekliğinde dursun */
 .satir-gorsel{width:18px;height:18px;object-fit:contain;display:block}
+
+/* ================= GİRİŞ EKRANI ================= */
+.giris-kutu{display:flex;flex-direction:column;align-items:center;gap:14px;margin-top:8px}
+.google-btn{
+  display:inline-flex;align-items:center;gap:11px;background:#fff;color:#1f1f1f;
+  border-radius:999px;padding:12px 26px;font-size:15px;font-weight:650;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+.google-btn:hover{background:#f1f3f4}
+.google-logo{width:19px;height:19px;flex:none}
+.giris-alt{color:var(--sonuk);font-size:13.5px;line-height:1.6;max-width:380px;margin:0}
+.giris-alt.kucuk{font-size:12px;color:#5c6b86;margin-top:22px}
+.yukleniyor{
+  width:26px;height:26px;border-radius:50%;
+  border:2.5px solid var(--line);border-top-color:var(--mavi);
+  animation:doner .8s linear infinite;
+}
+@keyframes doner{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.yukleniyor{animation-duration:2.4s}}
+/* hesap rozetindeki Google profil fotoğrafı */
+.rozet-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.rozet-avatar{overflow:hidden}

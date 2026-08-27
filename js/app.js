@@ -23,6 +23,8 @@ const Depo = {
   yaz(anahtar, deger) {
     try {
       localStorage.setItem(ONEK + anahtar, JSON.stringify(deger));
+      // yerel ayna yazıldı; bulut katmanı varsa aynısını oraya da taşır
+      if (typeof Bulut !== "undefined") Bulut.degisti(anahtar);
       return true;
     } catch (e) {
       console.error("Depo yazılamadı:", anahtar, e);
@@ -89,8 +91,6 @@ const durum = {
   editorOnizleme: "duzenle",
   secimModu: false,
   seciliCoklu: new Set(),
-  duzenlemeModu: false,
-  duzenlenenProfil: null,
   editorKonuId: null,
   seciliObjeId: null
 };
@@ -613,120 +613,12 @@ function ayarlariKaydet() {
 /* ----------------------------------------------------------
    PROFİLLER
 ---------------------------------------------------------- */
-function profilleriYukle() {
-  durum.profiller = Depo.oku("profiller", []);
-  // rol altyapısı — şimdilik herkes admin; Firebase'de gerçek yetki gelecek
-  durum.profiller.forEach(p => { if (!p.rol) p.rol = "admin"; });
-  durum.aktifProfilId = Depo.oku("aktifProfil", null);
-}
-function profilleriKaydet() { Depo.yaz("profiller", durum.profiller); }
-function aktifProfil() { return durum.profiller.find(p => p.id === durum.aktifProfilId) || null; }
-function adminMi() { const p = aktifProfil(); return !p || p.rol !== "ogrenci"; }
-
-function profilleriCiz() {
-  const liste = $("#profil-liste");
-  liste.innerHTML = "";
-
-  durum.profiller.forEach(p => {
-    const kart = document.createElement("button");
-    kart.className = "profil-kart";
-    kart.innerHTML = `
-      <span class="profil-yuz" style="background:${guvenli(p.renk)}">${guvenli(p.avatar)}</span>
-      <span class="profil-isim">${guvenli(p.ad)}</span>
-      <span class="sil-btn" data-sil="${p.id}">✕</span>`;
-    kart.addEventListener("click", ev => {
-      if (ev.target.dataset.sil) { profilSil(p.id); return; }
-      if (durum.duzenlemeModu) { profilModalAc(p); return; }
-      profilSec(p.id);
-    });
-    liste.appendChild(kart);
-  });
-
-  const ekle = document.createElement("button");
-  ekle.className = "profil-kart ekle";
-  ekle.innerHTML = `<span class="profil-yuz">+</span><span class="profil-isim">Profil Ekle</span>`;
-  ekle.addEventListener("click", () => profilModalAc(null));
-  liste.appendChild(ekle);
-}
-
-function profilSec(id) {
-  durum.aktifProfilId = id;
-  Depo.yaz("aktifProfil", id);
-  anaEkranaGec();
-}
-
-function profilSil(id) {
-  const p = durum.profiller.find(x => x.id === id);
-  if (!p) return;
-  onay(`"${p.ad}" profili ve bu profile ait tüm ilerleme kayıtları kalıcı olarak silinecek.`,
-       { baslik: "Profili sil", ikon: p.avatar, evet: "Profili sil" }).then(evet => {
-    if (!evet) return;
-    durum.profiller = durum.profiller.filter(x => x.id !== id);
-    profilleriKaydet();
-    const tum = Depo.oku("ilerleme", {});
-    delete tum[id];
-    Depo.yaz("ilerleme", tum);
-    if (durum.aktifProfilId === id) {
-      durum.aktifProfilId = null;
-      Depo.yaz("aktifProfil", null);
-    }
-    profilleriCiz();
-    bildir("Profil silindi");
-  });
-}
-
-let secilenAvatar = AVATARLAR[0];
-let secilenRenk = RENKLER[0];
-
-function secimleriCiz() {
-  const a = $("#avatar-secim");
-  a.innerHTML = "";
-  AVATARLAR.forEach(av => {
-    const b = document.createElement("button");
-    b.className = "sec-ogesi" + (av === secilenAvatar ? " secili" : "");
-    b.textContent = av;
-    b.addEventListener("click", () => { secilenAvatar = av; secimleriCiz(); });
-    a.appendChild(b);
-  });
-  const r = $("#renk-secim");
-  r.innerHTML = "";
-  RENKLER.forEach(rk => {
-    const b = document.createElement("button");
-    b.className = "sec-ogesi" + (rk === secilenRenk ? " secili" : "");
-    b.style.background = rk;
-    b.addEventListener("click", () => { secilenRenk = rk; secimleriCiz(); });
-    r.appendChild(b);
-  });
-}
-
-function profilModalAc(profil) {
-  durum.duzenlenenProfil = profil;
-  $("#modal-baslik").textContent = profil ? "Profili Düzenle" : "Yeni Profil";
-  $("#profil-ad").value = profil ? profil.ad : "";
-  secilenAvatar = profil ? profil.avatar : AVATARLAR[0];
-  secilenRenk   = profil ? profil.renk   : RENKLER[0];
-  secimleriCiz();
-  $("#modal-profil").classList.remove("gizli");
-  setTimeout(() => $("#profil-ad").focus(), 50);
-}
-function profilModalKapat() {
-  $("#modal-profil").classList.add("gizli");
-  durum.duzenlenenProfil = null;
-}
-function profilKaydet() {
-  const ad = $("#profil-ad").value.trim();
-  if (!ad) { bildir("Bir ad yaz"); return; }
-  if (durum.duzenlenenProfil) {
-    Object.assign(durum.duzenlenenProfil, { ad, avatar: secilenAvatar, renk: secilenRenk });
-  } else {
-    durum.profiller.push({
-      id: yeniId(), ad, avatar: secilenAvatar, renk: secilenRenk,
-      rol: durum.profiller.length === 0 ? "admin" : "admin"   // Firebase turunda "ogrenci" olacak
-    });
-  }
-  profilleriKaydet();
-  profilModalKapat();
-  profilleriCiz();
+/* Hesap = profil. Google oturumu açıldığında bulut.js `oturumHazir` ile
+   tek profil oluşturur; bu yüzden eski çoklu-profil ekranı kaldırıldı.
+   İlerleme kayıtları hâlâ profil kimliğine göre tutuluyor — o kimlik
+   artık Firebase kullanıcı kimliği (uid). */
+function aktifProfil() {
+  return durum.profiller.find(p => p.id === durum.aktifProfilId) || null;
 }
 
 /* ----------------------------------------------------------
@@ -1559,10 +1451,19 @@ function objeKonum(objeler, obje) {
    ========================================================== */
 function anaEkranaGec() {
   const p = aktifProfil();
-  if (!p) { ekranGoster("profil"); profilleriCiz(); return; }
-  $("#rozet-avatar").textContent = p.avatar;
-  $("#rozet-avatar").style.background = p.renk;
+  if (!p) { girisEkraniniGoster(); return; }
+
+  const avatar = $("#rozet-avatar");
+  if (p.foto) {
+    avatar.innerHTML = `<img src="${guvenli(p.foto)}" alt="" referrerpolicy="no-referrer">`;
+    avatar.style.background = "transparent";
+  } else {
+    avatar.textContent = p.avatar;
+    avatar.style.background = p.renk;
+  }
   $("#rozet-ad").textContent = p.ad;
+  // öğrenci rolünde düzenleme kutusu gizlenir; asıl koruma firestore.rules'ta
+  $("#btn-duzenle").parentElement.classList.toggle("gizli", !adminMi());
   ozetiCiz();
   konulariCiz();
   durum.ekranGecmisi = [];
@@ -2609,22 +2510,9 @@ function otomatikSoru(o, konu) {
    OLAYLAR
    ========================================================== */
 function olaylariBagla() {
-  /* profil */
-  $("#btn-profil-duzenle").addEventListener("click", () => {
-    durum.duzenlemeModu = !durum.duzenlemeModu;
-    $("#ekran-profil").classList.toggle("duzenleme-modu", durum.duzenlemeModu);
-    $("#btn-profil-duzenle").textContent = durum.duzenlemeModu ? "Bitti" : "Profilleri Düzenle";
-  });
-  $("#btn-profil-kaydet").addEventListener("click", profilKaydet);
-  $("#btn-profil-iptal").addEventListener("click", profilModalKapat);
-  $("#profil-ad").addEventListener("keydown", e => { if (e.key === "Enter") profilKaydet(); });
-  $("#btn-aktif-profil").addEventListener("click", () => {
-    durum.duzenlemeModu = false;
-    $("#ekran-profil").classList.remove("duzenleme-modu");
-    $("#btn-profil-duzenle").textContent = "Profilleri Düzenle";
-    profilleriCiz();
-    ekranGoster("profil");
-  });
+  /* giriş / hesap */
+  $("#btn-google-giris").addEventListener("click", () => Bulut.girisYap());
+  $("#btn-aktif-profil").addEventListener("click", hesabiGoster);
 
   /* ana ekran */
   $("#btn-ayarlar").addEventListener("click", ayarEkraniCiz);
@@ -2722,20 +2610,110 @@ function olaylariBagla() {
 /* ==========================================================
    BAŞLAT
    ========================================================== */
-function baslat() {
-  profilleriYukle();
+/* ==========================================================
+   OTURUM KÖPRÜSÜ — bulut.js buradaki üç fonksiyonu çağırır
+   ========================================================== */
+
+/* Giriş yapılmamış: giriş ekranını göster */
+function girisEkraniniGoster() {
+  $("#giris-bekle").classList.add("gizli");
+  $("#giris-kutu").classList.remove("gizli");
+  durum.profiller = [];
+  durum.aktifProfilId = null;
+  ekranGoster("profil", false);
+}
+
+/* Giriş yapıldı: Google hesabı tek profil olarak kullanılır.
+   Alttaki kod hâlâ profil kimliğine göre ilerleme tuttuğu için
+   profil dizisini uid ile dolduruyoruz — hesap = profil. */
+function oturumHazir(k) {
+  durum.profiller = [{
+    id: k.uid,
+    ad: k.displayName || (k.email || "").split("@")[0] || "Hesap",
+    avatar: "🙂",
+    foto: k.photoURL || "",
+    renk: RENKLER[0],
+    rol: Bulut.yonetici ? "admin" : "ogrenci"
+  }];
+  durum.aktifProfilId = k.uid;
+
   ayarlariYukle();
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
-  olaylariBagla();
+  Bulut.ilkYuklemeBitti = true;
+  anaEkranaGec();
+}
 
-  if (aktifProfil()) anaEkranaGec();
-  else { profilleriCiz(); ekranGoster("profil"); }
+/* Buluttan yeni veri indi: yerel ayna güncellendi, ekranı tazele */
+function bulutVerisiGeldi(anahtar) {
+  if (!Bulut.ilkYuklemeBitti) return;
+
+  if (anahtar === "ayarlar") ayarlariYukle();
+  if (anahtar === "palet") paletYukle();
+  if (anahtar === "kutuphane") durum.kutuphane = Depo.oku("kutuphane", []);
+  if (anahtar === "ustKonular") durum.ustKonular = Depo.oku("ustKonular", []);
+
+  const aktifEkran = ($("section.ekran.aktif") || {}).id;
+  if (aktifEkran === "ekran-ana") { ozetiCiz(); konulariCiz(); }
+  else if (aktifEkran === "ekran-editor" && typeof editorTazele === "function") {
+    konuSeciciDoldur($("#editor-konu"));
+    $("#editor-konu").value = durum.editorKonuId;
+    if (typeof emojileriCiz === "function") emojileriCiz();
+    editorTazele();
+  }
+}
+
+/* Hesap kutusu: kim girişli, yetkisi ne, çıkış ve UID.
+   UID lazım çünkü ilk yöneticiyi Firebase konsolundan elle eklemek
+   gerekiyor: yoneticiler koleksiyonuna bu kimlikle bir belge açılır. */
+async function hesabiGoster() {
+  const p = aktifProfil();
+  if (!p) return;
+  const bulutta = typeof Bulut !== "undefined" && Bulut.kullanici;
+  const uid = bulutta ? Bulut.kullanici.uid : "—";
+  const rol = adminMi() ? "Yönetici — konuları düzenleyebilirsin"
+                        : "Öğrenci — konular salt okunur";
+
+  const cik = await onay(
+    `${p.ad}\n${bulutta ? Bulut.kullanici.email : "Yerel kip (bulut yok)"}\n\n` +
+    `${rol}\n\nKullanıcı kimliği:\n${uid}`,
+    { baslik: "Hesap", ikon: "👤",
+      evet: bulutta ? "Çıkış yap" : "Kapat",
+      hayir: "Kapat", tehlikeli: !!bulutta });
+
+  if (cik && bulutta) Bulut.cikisYap();
+}
+
+function baslat() {
+  olaylariBagla();
 
   if (location.protocol !== "file:" && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }
+
+  /* Bulut açılırsa oturum durumu ekranı belirler. Firebase yüklenemezse
+     (dosyadan açma, ağ yok, SDK engelli) uygulama eskisi gibi yalnızca
+     bu cihazda çalışmaya devam eder — veri kaybolmaz. */
+  $("#giris-kutu").classList.add("gizli");
+  $("#giris-bekle").classList.remove("gizli");
+
+  if (typeof Bulut !== "undefined" && Bulut.baslat()) return;
+
+  yerelKipeDus("Buluta bağlanılamadı — bu oturum yalnızca bu cihazda çalışıyor.");
+}
+
+/* Firebase olmadan çalışma: tek yerel profil, senkron yok */
+function yerelKipeDus(mesaj) {
+  $("#giris-bekle").classList.add("gizli");
+  $("#giris-yerel-not").textContent = mesaj || "";
+  durum.profiller = [{ id: "yerel", ad: "Bu cihaz", avatar: "🙂", renk: RENKLER[0], rol: "admin" }];
+  durum.aktifProfilId = "yerel";
+  ayarlariYukle();
+  paletYukle();
+  kutuphaneYukle();
+  ustKonulariYukle();
+  anaEkranaGec();
 }
 
 document.addEventListener("DOMContentLoaded", baslat);
