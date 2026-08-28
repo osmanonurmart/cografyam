@@ -32,7 +32,6 @@ const Bulut = {
   _bekleyen: new Set(),
   _zaman: null,
   _uygulanan: false,    // snapshot uygularken geri gönderme döngüsünü kes
-  _tamamlandi: new Set(),   // buluta bir kez tamamlanan koleksiyonlar
 
   baslat() {
     if (typeof firebase === "undefined" || typeof FIREBASE_YAPILANDIRMA === "undefined") {
@@ -66,12 +65,16 @@ const Bulut = {
   async _ilkYukleme() {
     const SINIR = 6000;
     try {
-      const anlik = await Promise.race([
-        this._db.collection("konular").get(),
-        new Promise((_, hata) => setTimeout(() => hata(new Error("zaman aşımı")), SINIR))
-      ]);
-      if (anlik.empty && Depo.oku("kutuphane", []).length) {
-        await this.tumIcerigiGonder(true);   // ilk kurulum: yereli buluta taşı
+      /* Her içerik koleksiyonu için: bulutta hiç belge yoksa ve bu cihazda
+         varsa, yereldeki bir kez yukarı taşınır. Dinleyiciler başlamadan
+         önce ve yalnızca burada yapılır — snapshot'a bağlı yükleme silinen
+         kayıtları diriltiyordu. */
+      for (const [anahtar, koleksiyon] of ICERIK_KOLEKSIYONLARI) {
+        const anlik = await Promise.race([
+          this._db.collection(koleksiyon).get(),
+          new Promise((_, hata) => setTimeout(() => hata(new Error("zaman aşımı")), SINIR))
+        ]);
+        if (anlik.empty && this._yerelAdet(anahtar)) await this._anahtariGonder(anahtar);
       }
     } catch (e) {
       console.warn("İlk yükleme başarısız:", e);
@@ -95,7 +98,12 @@ const Bulut = {
     }, e => this._hata("konular", e)));
 
     ekle(this._db.collection("ustKonular").onSnapshot(s => {
-      const ustler = s.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      const ustler = s.docs.map(d => Object.assign({ id: d.id }, d.data()))
+                           .filter(u => !COP_KAYITLAR.includes(u.id));
+      // kara listedeki kayıt buluttaysa sil, yoksa her açılışta geri geliyor
+      s.docs.forEach(d => {
+        if (COP_KAYITLAR.includes(d.id)) d.ref.delete().catch(() => {});
+      });
       ustler.sort((a, b) => (a.sira || 0) - (b.sira || 0));
       if (this._bosBulutuYoksay("ustKonular", ustler)) return;
       this._yerelYaz("ustKonular", ustler);
@@ -118,23 +126,21 @@ const Bulut = {
   /* Bulut boş, yerelde içerik var: yereli SİLME — boş listeyi yerele
      yazmak bu cihazdaki her şeyi silmek olurdu.
 
-     Ama yalnızca korumak yetmiyordu: bulut o koleksiyon için boş kaldığı
-     sürece her açılışta uyarı çıkıyor ve durum hiç düzelmiyordu. Bu,
-     bulut kurulduktan sonra hiç dokunulmamış bir koleksiyonun başına
-     geliyor (gönderim ancak Depo.yaz ile tetikleniyor). Doğrusu eksiği
-     tamamlamak: yereli bir kez yukarı gönder, sonrası normal akış. */
+     Burada YALNIZCA koruma yapılır, gönderme yapılmaz. Bir ara bu noktada
+     "eksiği tamamla" diye yükleme yapılıyordu ve kötü sonuç verdi: bir
+     belge silindiğinde dinleyici boş liste getiriyor, koruma devreye
+     girip yereldeki (artık bayat) kaydı geri yüklüyordu. Silinen belge
+     dirilip duruyordu. İlk eşitleme artık açılışta bir kez, dinleyiciler
+     başlamadan önce yapılıyor (bkz. _ilkYukleme). */
   _bosBulutuYoksay(anahtar, gelen) {
     if (gelen.length) return false;
-    const yerel = Depo.oku(anahtar, []);
-    if (!yerel.length) return false;
+    return Depo.oku(anahtar, []).length > 0;
+  },
 
-    if (!this._tamamlandi.has(anahtar)) {
-      this._tamamlandi.add(anahtar);
-      this._anahtariGonder(anahtar)
-        .then(() => bildir("Bu cihazdaki içerik buluta yüklendi"))
-        .catch(e => console.warn("Eksik içerik yüklenemedi:", anahtar, e));
-    }
-    return true;
+  /* Bir anahtarın yerelde kaç kaydı var? palet, liste değil nesne tutuyor. */
+  _yerelAdet(anahtar) {
+    if (anahtar === "palet") return ((Depo.oku("palet", {}) || {}).gorseller || []).length;
+    return Depo.oku(anahtar, []).length;
   },
 
   _hata(nerede, e) {
@@ -183,7 +189,9 @@ const Bulut = {
 
   _anahtariGonder(anahtar) {
     if (anahtar === "kutuphane")  return this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []));
-    if (anahtar === "ustKonular") return this._koleksiyonEsitle("ustKonular", Depo.oku("ustKonular", []));
+    // kara listedeki kayıt yereldeyse buluta geri gönderilmesin
+    if (anahtar === "ustKonular") return this._koleksiyonEsitle("ustKonular",
+      Depo.oku("ustKonular", []).filter(u => !COP_KAYITLAR.includes(u.id)));
     if (anahtar === "palet") {
       const p = Depo.oku("palet", {});
       return this._koleksiyonEsitle("gorseller",
@@ -222,6 +230,9 @@ const Bulut = {
     if (!sessiz) bildir("İçerik buluta yüklendi");
   }
 };
+
+/* İçerik koleksiyonları: [yerel anahtar, Firestore koleksiyonu] */
+const ICERIK_KOLEKSIYONLARI = [["kutuphane", "konular"], ["ustKonular", "ustKonular"], ["palet", "gorseller"]];
 
 /* Tek belgede duran kayıtlar: koleksiyon/genel */
 const TEKIL_BELGELER = [["ayarlar", "ayarlar"], ["ilerleme", "ilerleme"], ["gunluk", "gunluk"]];

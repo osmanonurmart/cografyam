@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=37` → `?s=38` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=37`
+1. `index.html` içindeki `?s=40` → `?s=41` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=40`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -83,6 +83,10 @@ açılış çalışmazdı.
   Silmede `request.resource` null olduğu için içine alan denetimi koyulursa
   kural değerlendirilemez ve silme sessizce reddedilir. `create, update` ile
   `delete` ayrı yazılmalı — bu tuzağa bir kez düşüldü.
+- **Buluta bir kez sızan bozuk kayıt her yerden geri gelir.** Yerel aynalar
+  onu tutar, bulut boşalınca geri yüklenir. `COP_KAYITLAR` kara listesi bunun
+  içindir. Ayrıca eksik alan (renk, ikon) uygulamayı çökertmemeli — `karart`
+  ve `ustKonulariYukle` varsayılana düşer.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
 
 ### Kaynak

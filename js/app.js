@@ -265,8 +265,11 @@ function sadelestir(s) {
     .toLocaleLowerCase("tr");
 }
 
+/* Rengi koyultur. Bozuk ya da eksik renk gelirse varsayılana düşer —
+   tek bir kayıttaki eksik alan yüzünden ana ekranın hiç çizilememesi
+   (uygulamanın boş açılması) bir kez yaşandı. */
 function karart(hex, oran) {
-  const s = hex.replace("#", "");
+  const s = String(/^#?[0-9a-fA-F]{6}$/.test(hex || "") ? hex : RENKLER[0]).replace("#", "");
   const r = Math.round(parseInt(s.slice(0, 2), 16) * oran);
   const g = Math.round(parseInt(s.slice(2, 4), 16) * oran);
   const b = Math.round(parseInt(s.slice(4, 6), 16) * oran);
@@ -376,8 +379,30 @@ function kutuphaneYukle() {
 }
 
 /* ---- üst konular (ana ekrandaki kapsayıcı kutular) ---- */
+/* Buluttan ya da eski sürümden gelen kayıtlarda alan eksik olabilir.
+   Eksik alan uygulamayı çökertmemeli; varsayılanla doldurulur. */
+function ustKonuTamamla(u, i) {
+  if (!u.renk) u.renk = RENKLER[i % RENKLER.length];
+  if (!u.ikon) u.ikon = "📁";
+  if (!u.ad)   u.ad = "Adsız kutu";
+  return u;
+}
+
+/* Tek seferlik temizlik. Geliştirme sırasında silme izinlerini denerken
+   oluşturulan bir test belgesi buluta sızdı; alanları eksik olduğu için
+   ana ekranı çökertti ve her cihazın yerel aynasına yayıldığı için
+   silindikçe geri geldi. Kimliğe göre eleniyor. */
+const COP_KAYITLAR = ["zz-silme-testi"];
+
+/* Buluttan ya da eski bir sürümden gelen kayıtta alan eksik olabilir.
+   Eksik alan uygulamayı çökertmemeli — varsayılanla doldurulur. */
 function ustKonulariYukle() {
-  durum.ustKonular = Depo.oku("ustKonular", []);
+  durum.ustKonular = Depo.oku("ustKonular", []).filter(u => !COP_KAYITLAR.includes(u.id)).map((u, i) => {
+    if (!u.renk) u.renk = RENKLER[i % RENKLER.length];
+    if (!u.ikon) u.ikon = "📁";
+    if (!u.ad)   u.ad   = "Adsız kutu";
+    return u;
+  });
 }
 function ustKonulariKaydet() {
   Depo.yaz("ustKonular", durum.ustKonular);
