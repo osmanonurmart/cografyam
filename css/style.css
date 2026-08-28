@@ -432,9 +432,18 @@ body.calismada .cevir-ortu{
    Kalıcı çözüm geometriyi haritanın gerçek izdüşümüyle yeniden
    üretmek olur; denenen düzeltmeler (afin, benzerlik, ikinci derece
    uydurma, ülke başına öteleme) ölçümde ya kazanç vermedi ya da
-   komşuları Türkiye'nin üstüne taşıdı. */
+   komşuları Türkiye'nin üstüne taşıdı.
+
+   Kontur ince tutulmalı. Bir ara boşlukları kapatsın diye 8 birim
+   yapılmıştı; kara sınırındaki 10-24 birimlik sapmaları zaten
+   kapatmıyordu ama Ege adalarını yuvarlak lekelere çevirdi. 2 birim
+   yalnızca kenar yumuşatmasından doğan saç teli boşlukları kapatır,
+   ada şekillerini bozmaz.
+
+   Dolgu denizden biraz ayrılıyor ki komşu ülkeler kara olarak okunsun;
+   yine de illerden (#24344f) belirgin koyu, odak Türkiye'de kalsın. */
 .katman-arka .komsu{
-  fill:#101a2e;stroke:#101a2e;stroke-width:8;stroke-linejoin:round;pointer-events:none;
+  fill:#151f36;stroke:#151f36;stroke-width:2;stroke-linejoin:round;pointer-events:none;
 }
 
 /* ================= ÇİZGİ OBJELER (akarsu vb.) ================= */
