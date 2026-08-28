@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=34` → `?s=35` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=34`
+1. `index.html` içindeki `?s=36` → `?s=35` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=36`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -75,6 +75,10 @@ açılış çalışmazdı.
   seriliyor — üçü birden olmazsa sınırlar geri geliyor.
 - **Depo sınırı** origin başına ~5 MB ve her karakter 2 bayt sayılıyor. Metin bu
   sınırı zorlamaz; yalnızca yüklenen görseller zorlar (128×128 PNG ≈ 14-40 KB).
+- **Harita boyutu** `HARITA_VIEWBOX` ile ayarlanır. Türkiye enine olduğu için
+  harita hep genişliğe göre sığar — ölçeği belirleyen tek sayı çerçeve genişliği,
+  dikey kırpmanın etkisi yok. Çerçeve ülkenin sınırına çekildi (%97 doluluk),
+  çevre yazıları kenarda kırpılıyor.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
 
 ### Kaynak
