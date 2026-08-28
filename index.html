@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=42">
+<link rel="stylesheet" href="css/style.css?s=44">
 </head>
 <body>
 
@@ -77,10 +77,14 @@
       <span class="calisma-konu" id="calisma-konu"></span>
       <span class="calisma-sayac" id="calisma-sayac"></span>
     </div>
-    <div class="skor">
-      <span class="rozet dogru">✓ <b id="skor-dogru">0</b></span>
-      <span class="rozet yanlis">✕ <b id="skor-yanlis">0</b></span>
-      <span class="rozet pas">⤼ <b id="skor-pas">0</b></span>
+    <div class="skor-sutun">
+      <div class="skor">
+        <span class="rozet dogru">✓ <b id="skor-dogru">0</b></span>
+        <span class="rozet yanlis">✕ <b id="skor-yanlis">0</b></span>
+        <span class="rozet pas">⤼ <b id="skor-pas">0</b></span>
+      </div>
+      <button class="rozet zoom-rozet" id="btn-harita-zoom"
+              title="Yakınlaştırma: tekerlek ya da iki parmak">🔍 <b>Yakınlaştır</b></button>
     </div>
     <div class="ilerleme-cizgi"><div class="ilerleme-dolu" id="ilerleme-dolu"></div></div>
   </header>
@@ -323,9 +327,6 @@
   </div>
 </section>
 
-<!-- ============ TELEFONU ÇEVİR ============ -->
-<div class="cevir-ortu" id="cevir-ortu">
-  <div class="cevir-ikon">📱</div>
   <p>Harita için telefonu <b>yan çevir</b></p>
 </div>
 
@@ -375,17 +376,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=42"></script>
-<script src="js/il-merkez.js?s=42"></script>
-<script src="js/komsular.js?s=42"></script>
-<script src="js/hazir-icerik.js?s=42"></script>
+<script src="js/harita-turkiye.js?s=44"></script>
+<script src="js/il-merkez.js?s=44"></script>
+<script src="js/komsular.js?s=44"></script>
+<script src="js/hazir-icerik.js?s=44"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=42"></script>
-<script src="js/data.js?s=42"></script>
-<script src="js/app.js?s=42"></script>
-<script src="js/bulut.js?s=42"></script>
-<script src="js/editor.js?s=42"></script>
-<script src="js/konu-duzen.js?s=42"></script>
+<script src="js/firebase-config.js?s=44"></script>
+<script src="js/data.js?s=44"></script>
+<script src="js/app.js?s=44"></script>
+<script src="js/bulut.js?s=44"></script>
+<script src="js/editor.js?s=44"></script>
+<script src="js/konu-duzen.js?s=44"></script>
 </body>
 </html>

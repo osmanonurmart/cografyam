@@ -650,7 +650,7 @@ async function yedegiIceAktar(dosya) {
    GENEL AYARLAR
 ---------------------------------------------------------- */
 function ayarlariYukle() {
-  durum.ayarlar = Object.assign({ birikimli: false, yanlisSure: 6.5, ses: true, titresim: true, karistir: true }, Depo.oku("ayarlar", {}));
+  durum.ayarlar = Object.assign({ birikimli: false, yanlisSure: 6.5, ses: true, titresim: true, karistir: true, haritaZoom: false }, Depo.oku("ayarlar", {}));
 }
 function ayarlariKaydet() {
   Depo.yaz("ayarlar", durum.ayarlar);
@@ -1615,11 +1615,113 @@ function konuSifirla(konu) {
    ========================================================== */
 let calismaHarita = null;
 
+/* ----------------------------------------------------------
+   ÇALIŞMA EKRANINDA YAKINLAŞTIRMA
+
+   Telefonu yatay çevirme zorunluluğu kaldırıldı; dikeyde harita küçük
+   kaldığı için yakınlaştırma onu kullanılabilir kılıyor.
+
+   Açıkken: fare tekerleği ve iki parmak yakınlaştırır, sürüklemek gezdirir.
+   Tek dokunuş yine cevap verir — sürükleme eşiği (4 birim) ikisini ayırır,
+   yoksa haritayı kaydırmak yanlışlıkla il işaretlerdi.
+
+   Anahtarın durumu genel ayarlarda saklanır: bir konuda açtıysan
+   diğerinde de açık gelir.
+---------------------------------------------------------- */
+function haritaZoomAcikMi() { return durum.ayarlar.haritaZoom === true; }
+
+function haritaZoomDurumuCiz() {
+  const acik = haritaZoomAcikMi();
+  const b = $("#btn-harita-zoom");
+  if (!b) return;
+  b.classList.toggle("acik", acik);
+  b.innerHTML = `🔍 <b>${acik ? "Açık" : "Yakınlaştır"}</b>`;
+  $("#harita-alan").classList.toggle("zoomlu", acik);
+}
+
+function haritaZoomDegistir() {
+  durum.ayarlar.haritaZoom = !haritaZoomAcikMi();
+  ayarlariKaydet();
+  if (!haritaZoomAcikMi() && calismaHarita) calismaHarita.gorunumSifirla();
+  haritaZoomDurumuCiz();
+  bildir(haritaZoomAcikMi()
+    ? "Yakınlaştırma açık — tekerlek ya da iki parmak, sürükleyerek gez"
+    : "Yakınlaştırma kapalı — harita tam görünümde");
+}
+
+function haritaZoomOlaylari(harita) {
+  const kap = $("#harita-alan");
+  const uzaklik = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const orta = (a, b) => ({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 });
+  let gezinme = null;
+  const dokunanlar = new Map();
+  let ikiParmak = null;
+
+  kap.addEventListener("wheel", ev => {
+    if (!haritaZoomAcikMi()) return;
+    ev.preventDefault();
+    harita.yakinlastir(ev.deltaY < 0 ? 1.18 : 1 / 1.18, harita.svgNokta(ev));
+  }, { passive: false });
+
+  kap.addEventListener("pointerdown", ev => {
+    if (!haritaZoomAcikMi()) return;
+    dokunanlar.set(ev.pointerId, ev);
+    durum.zoomSurukledi = false;
+    if (dokunanlar.size === 2) {
+      const [a, b] = [...dokunanlar.values()];
+      ikiParmak = { uzaklik: uzaklik(a, b), capa: harita.svgNokta(orta(a, b)) };
+      gezinme = null;
+    } else {
+      /* setPointerCapture KULLANILMIYOR: yakalama click olayını da
+         kapsayıcıya yönlendiriyor, SVG üstündeki cevap dinleyicisi hiç
+         çalışmıyordu — zoom açıkken hiçbir ile tıklanamıyordu. */
+      gezinme = { bas: harita.svgNokta(ev), ekran: { x: ev.clientX, y: ev.clientY } };
+    }
+  });
+
+  kap.addEventListener("pointermove", ev => {
+    if (!haritaZoomAcikMi()) return;
+    if (dokunanlar.has(ev.pointerId)) dokunanlar.set(ev.pointerId, ev);
+
+    if (ikiParmak && dokunanlar.size === 2) {
+      const [a, b] = [...dokunanlar.values()];
+      const yeni = uzaklik(a, b);
+      if (ikiParmak.uzaklik > 0 && Math.abs(yeni - ikiParmak.uzaklik) > 1) {
+        harita.yakinlastir(yeni / ikiParmak.uzaklik, harita.svgNokta(orta(a, b)));
+        ikiParmak.uzaklik = yeni;
+        durum.zoomSurukledi = true;
+      }
+      return;
+    }
+    if (!gezinme) return;
+    // eşik: küçük hareket dokunuştur, cevap olarak geçmeli
+    if (Math.hypot(ev.clientX - gezinme.ekran.x, ev.clientY - gezinme.ekran.y) > 4) durum.zoomSurukledi = true;
+    if (!durum.zoomSurukledi) return;
+    const n = harita.svgNokta(ev);
+    harita.kaydir(n.x - gezinme.bas.x, n.y - gezinme.bas.y);
+  });
+
+  const bitir = ev => {
+    dokunanlar.delete(ev.pointerId);
+    if (dokunanlar.size < 2) ikiParmak = null;
+    if (!dokunanlar.size) gezinme = null;
+    // click olayı hemen ardından gelir; bayrağı ondan sonra sıfırla
+    if (durum.zoomSurukledi) setTimeout(() => { durum.zoomSurukledi = false; }, 0);
+  };
+  kap.addEventListener("pointerup", bitir);
+  kap.addEventListener("pointercancel", bitir);
+  // parmak/fare harita dışında bırakılırsa gezinme yine de bitsin
+  window.addEventListener("pointerup", bitir);
+}
+
 function haritayiHazirla() {
   if (calismaHarita) return calismaHarita;
   calismaHarita = new Harita($("#harita-alan"));
 
+  haritaZoomOlaylari(calismaHarita);
+
   calismaHarita.svg.addEventListener("click", ev => {
+    if (durum.zoomSurukledi) return;   // gezinme hareketi cevap sayılmasın
     // obje modunda önce objeye bakılır
     const objeEl = ev.target.closest(".obje[data-obje]");
     if (objeEl) {
@@ -1670,6 +1772,8 @@ function konuyuBaslat(konu) {
   durum.kilit = false;
   if (!kayit || bitmis) { durum.kalanIller = []; durum.kalanObjeler = []; }
   const h = haritayiHazirla();
+  h.gorunumSifirla();          // yeni konu tam görünümle başlar
+  haritaZoomDurumuCiz();       // anahtarın durumu konular arasında korunur
   h.isimleriGoster(konu.ayar.ilIsimleri);
   h.objeleriCiz(konu.objeler || []);
 
@@ -2562,6 +2666,7 @@ function otomatikSoru(o, konu) {
 function olaylariBagla() {
   /* giriş / hesap */
   $("#btn-bulut").addEventListener("click", bulutBilgisi);
+  $("#btn-harita-zoom").addEventListener("click", haritaZoomDegistir);
 
   /* ana ekran */
   $("#btn-ayarlar").addEventListener("click", ayarEkraniCiz);

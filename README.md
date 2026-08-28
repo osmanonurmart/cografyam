@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=42` → `?s=43` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=42`
+1. `index.html` içindeki `?s=44` → `?s=45` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=44`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -95,6 +95,14 @@ açılış çalışmazdı.
   vermedi ya da komşuları Türkiye'nin üstüne taşıdı. Bu yüzden komşuların
   konturu kaldırıldı; sınırı gösteren tek çizgi Türkiye'nin kendi dış hattı.
   Kalıcı çözüm geometriyi haritanın gerçek izdüşümüyle yeniden üretmek.
+- **Çalışma ekranında yakınlaştırma** skor rozetlerinin altındaki 🔍 ile açılır:
+  tekerlek ve iki parmak yakınlaştırır, sürüklemek gezdirir, tek dokunuş yine
+  cevap verir (4 birimlik sürükleme eşiği ikisini ayırır). Anahtar genel
+  ayarlarda saklanır, konular arasında korunur. `setPointerCapture`
+  KULLANILMAZ — yakalama click olayını kapsayıcıya yönlendirip cevap
+  vermeyi tamamen bozuyordu.
+- **Telefonu yatay çevirme zorunluluğu yok.** Dikeyde harita küçük kalır,
+  yakınlaştırma onu kullanılabilir kılar.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
 
 ### Kaynak

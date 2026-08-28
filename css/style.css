@@ -203,6 +203,15 @@ input,textarea,select{font-family:inherit}
 .calisma-konu{font-weight:750;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .calisma-sayac{font-size:12px;color:var(--sonuk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skor{display:flex;gap:6px;flex:none}
+.skor-sutun{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:none}
+/* yakınlaştırma anahtarı — skor rozetlerinin altında, aynı dilde */
+.zoom-rozet{color:var(--sonuk);display:flex;align-items:center;gap:5px;line-height:1;cursor:pointer}
+.zoom-rozet b{font-weight:750}
+.zoom-rozet:hover{border-color:#3d4d6d;color:var(--metin)}
+.zoom-rozet.acik{background:var(--mavi);border-color:var(--mavi);color:#fff}
+/* zoom açıkken tarayıcının kendi kaydırma/yakınlaştırma jesti devreye girmesin */
+.harita-alan.zoomlu{touch-action:none;cursor:grab}
+.harita-alan.zoomlu:active{cursor:grabbing}
 .rozet{font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line)}
 .rozet.dogru{color:var(--yesil)}
 .rozet.yanlis{color:var(--kirmizi)}
@@ -336,19 +345,6 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 .obje-satir.secili{border-color:var(--mavi);background:var(--panel2)}
 .obje-satir b{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .obje-satir i{color:var(--sonuk);font-style:normal;font-size:11.5px}
-
-/* ---------- telefonu çevir ---------- */
-.cevir-ortu{display:none}
-body.calismada .cevir-ortu{
-  display:none;position:fixed;inset:0;z-index:60;background:var(--bg);
-  flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:30px;
-}
-@media (max-width:900px) and (orientation:portrait){
-  body.calismada .cevir-ortu{display:flex}
-}
-.cevir-ikon{font-size:54px;animation:salla 1.6s ease-in-out infinite}
-@keyframes salla{0%,60%,100%{transform:rotate(0)}30%{transform:rotate(90deg)}}
-.cevir-ortu p{color:var(--sonuk);font-size:16px;margin:0}
 
 /* ---------- modal ---------- */
 .modal{position:fixed;inset:0;z-index:70;display:grid;place-items:center;padding:20px;background:rgba(6,11,22,.8)}
