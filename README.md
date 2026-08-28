@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=40` → `?s=41` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=40`
+1. `index.html` içindeki `?s=41` → `?s=42` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=41`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -87,6 +87,14 @@ açılış çalışmazdı.
   onu tutar, bulut boşalınca geri yüklenir. `COP_KAYITLAR` kara listesi bunun
   içindir. Ayrıca eksik alan (renk, ikon) uygulamayı çökertmemeli — `karart`
   ve `ustKonulariYukle` varsayılana düşer.
+- **Komşu ülke sınırları haritaya tam oturmuyor** ve doğrusal bir dönüşümle
+  oturtulamıyor: geometri Natural Earth'ten enlem/boylam formülüyle üretildi,
+  Türkiye SVG'sinin izdüşümüne yaklaşık uyuyor (ortak sınırda ortalama 5,
+  yer yer 24 birim sapma; en kötüsü Irak ve Azerbaycan). Ölçüldü: afin,
+  benzerlik, ikinci derece uydurma ve ülke başına öteleme denendi — ya kazanç
+  vermedi ya da komşuları Türkiye'nin üstüne taşıdı. Bu yüzden komşuların
+  konturu kaldırıldı; sınırı gösteren tek çizgi Türkiye'nin kendi dış hattı.
+  Kalıcı çözüm geometriyi haritanın gerçek izdüşümüyle yeniden üretmek.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
 
 ### Kaynak

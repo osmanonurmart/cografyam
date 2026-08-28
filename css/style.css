@@ -414,8 +414,27 @@ body.calismada .cevir-ortu{
 }
 
 /* ================= KOMŞU ÜLKELER (arka plan) ================= */
+/* Komşu ülkeler düz kütle olarak çizilir, konturu YOKTUR.
+
+   Neden: komşu geometrisi Natural Earth'ten doğrusal bir enlem/boylam
+   dönüşümüyle üretildi ve Türkiye SVG'sinin izdüşümüne ancak yaklaşık
+   oturuyor — ölçtüm, ortak sınır boyunca ortalama 5, yer yer 24 birim
+   sapma var (en kötüsü Irak ve Azerbaycan). Eskiden komşuların açık
+   renkli (#22314f) bir konturu vardı; bu sapma yüzünden Türkiye'nin
+   kenarının hemen yanında ikinci bir çizgi gibi görünüyordu, asıl
+   "sınırlar oturmuyor" hissini veren şey buydu.
+
+   Kontur kaldırılınca sınırı gösteren tek çizgi Türkiye'nin kendi dış
+   hattı oluyor — ki doğru olan da o. Dolgu renginde kalın bir kontur
+   ise komşuyla Türkiye arasında kalan ince boşlukları kapatıyor;
+   komşular illerin ALTINDA çizildiği için taşan kısım görünmüyor.
+
+   Kalıcı çözüm geometriyi haritanın gerçek izdüşümüyle yeniden
+   üretmek olur; denenen düzeltmeler (afin, benzerlik, ikinci derece
+   uydurma, ülke başına öteleme) ölçümde ya kazanç vermedi ya da
+   komşuları Türkiye'nin üstüne taşıdı. */
 .katman-arka .komsu{
-  fill:#101a2e;stroke:#22314f;stroke-width:.7;stroke-linejoin:round;pointer-events:none;
+  fill:#101a2e;stroke:#101a2e;stroke-width:8;stroke-linejoin:round;pointer-events:none;
 }
 
 /* ================= ÇİZGİ OBJELER (akarsu vb.) ================= */
