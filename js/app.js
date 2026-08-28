@@ -436,6 +436,27 @@ function konuHazirMi(konu) {
 }
 
 /* Objenin cevap birimi: kendi ayarı "konu" ise konunun varsayılanı geçerli */
+/* ---- soru sırası ----
+   Fisher-Yates: her dizilim eşit olasılıkla çıkar. Ayarlar'dan
+   kapatılırsa konudaki doğal sıra (objelerin eklenme sırası) korunur. */
+function yeniSiralama(adet) {
+  const s = Array.from({ length: adet }, (_, i) => i);
+  if (durum.ayarlar.karistir === false) return s;
+  for (let i = s.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [s[i], s[j]] = [s[j], s[i]];
+  }
+  return s;
+}
+
+/* Kayıtlı sıra hâlâ bu konuya uyuyor mu? Konuya obje eklenmiş ya da
+   silinmişse eski sıra geçersizdir. */
+function siralamaGecerliMi(sira, adet) {
+  if (!Array.isArray(sira) || sira.length !== adet) return false;
+  const gorulen = new Set(sira);
+  return gorulen.size === adet && sira.every(i => Number.isInteger(i) && i >= 0 && i < adet);
+}
+
 /* Konudan soru listesi üretir.
    Bir objenin birden fazla soru metni olabilir; her biri ayrı soru olur.
    Cevap birimi konu ayarından gelir (obje düzeyinde ayar yok). */
@@ -604,7 +625,7 @@ async function yedegiIceAktar(dosya) {
    GENEL AYARLAR
 ---------------------------------------------------------- */
 function ayarlariYukle() {
-  durum.ayarlar = Object.assign({ birikimli: false, yanlisSure: 6.5, ses: true, titresim: true }, Depo.oku("ayarlar", {}));
+  durum.ayarlar = Object.assign({ birikimli: false, yanlisSure: 6.5, ses: true, titresim: true, karistir: true }, Depo.oku("ayarlar", {}));
 }
 function ayarlariKaydet() {
   Depo.yaz("ayarlar", durum.ayarlar);
@@ -641,6 +662,7 @@ function ilerlemeKaydet() {
   ilerlemeYaz(durum.konu.id, {
     index: durum.index,
     sonuclar: durum.sonuclar,
+    siralama: durum.siralama,
     toplam: durum.sorular.length,
     kalanIller: durum.kalanIller,
     kalanObjeler: durum.kalanObjeler,
@@ -1593,10 +1615,21 @@ function haritayiHazirla() {
 
 function konuyuBaslat(konu) {
   durum.konu = konu;
-  durum.sorular = sorulariUret(konu);
+  const ham = sorulariUret(konu);
 
   const kayit = ilerlemeOku(konu.id);
-  const bitmis = kayit && kayit.index >= durum.sorular.length;
+  const bitmis = kayit && kayit.index >= ham.length;
+
+  /* Soru sırası konuya girerken bir kez belirlenir ve ilerlemeyle birlikte
+     saklanır. Yarıda bırakıp döndüğünde aynı sırayla devam edersin; baştan
+     başlayınca yeni bir sıra çıkar. Kayıtlı sıra konunun soru sayısıyla
+     uyuşmuyorsa (araya obje eklenmiş/silinmişse) yenisi üretilir. */
+  const kayitliSira = kayit && !bitmis ? kayit.siralama : null;
+  durum.siralama = siralamaGecerliMi(kayitliSira, ham.length)
+    ? kayitliSira.slice()
+    : yeniSiralama(ham.length);
+  durum.sorular = durum.siralama.map(i => ham[i]);
+
   if (kayit && !bitmis) {
     durum.index = kayit.index || 0;
     durum.sonuclar = (kayit.sonuclar || []).slice(0, durum.sorular.length);
@@ -2013,6 +2046,10 @@ function bitir() {
 
 function bastanBasla() {
   $("#ortu-bitis").classList.add("gizli");
+  // baştan başlamak yeni bir sıra demek — aynı soruları aynı düzende sormasın
+  const ham = sorulariUret(durum.konu);
+  durum.siralama = yeniSiralama(ham.length);
+  durum.sorular = durum.siralama.map(i => ham[i]);
   durum.index = 0;
   durum.sonuclar = durum.sorular.map(() => null);
   durum.kalanIller = [];
@@ -2148,6 +2185,7 @@ const SURE_SECENEKLERI = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 6.5, 7, 8, 9, 10];
 
 function ayarEkraniCiz() {
   $("#toggle-birikimli").classList.toggle("acik", durum.ayarlar.birikimli);
+  $("#toggle-karistir").classList.toggle("acik", durum.ayarlar.karistir !== false);
   $("#toggle-ses").classList.toggle("acik", durum.ayarlar.ses);
   $("#toggle-titresim").classList.toggle("acik", durum.ayarlar.titresim);
   const sec = $("#sure-sec");
@@ -2518,6 +2556,14 @@ function olaylariBagla() {
     $("#toggle-birikimli").classList.toggle("acik", durum.ayarlar.birikimli);
     ayarlariKaydet();
     if (durum.konu && calismaHarita) { isimleriTazele(); objeleriTazele(); }
+  });
+  $("#toggle-karistir").addEventListener("click", () => {
+    durum.ayarlar.karistir = durum.ayarlar.karistir === false;
+    $("#toggle-karistir").classList.toggle("acik", durum.ayarlar.karistir);
+    ayarlariKaydet();
+    bildir(durum.ayarlar.karistir
+      ? "Sorular karışık gelecek — konuya baştan girdiğinde geçerli"
+      : "Sorular objelerin sırasıyla gelecek");
   });
   $("#sure-sec").addEventListener("change", e => {
     durum.ayarlar.yanlisSure = parseFloat(e.target.value);

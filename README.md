@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=32` → `?s=33` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=32`
+1. `index.html` içindeki `?s=34` → `?s=34` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=34`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -65,6 +65,9 @@ açılış çalışmazdı.
 - **Obje = soru.** Haritaya koyduğum her emoji, çizgi ve alan aynı zamanda bir
   sorudur. Doğru cevap koordinata değil `iller` listesine bakar; objeyi
   sürüklemek cevabı bozmaz.
+- **Soru sırası** konuya girerken bir kez belirlenip ilerlemeyle saklanır: yarıda
+  bırakıp dönünce aynı sıra, baştan başlayınca yeni sıra. Ayarlar › Soruları
+  karıştır ile kapatılabilir.
 - **Cevap birimi konu düzeyinde:** İl / Bölge / Obje. Tek tek objelerde ayarı yok.
 - **Hayalet mod** yalnızca cevap birimi "İl" olmayan konularda açılır.
 - **İl sınırlarını kaldır:** kaynak SVG'de komşu iller birbirine tam değmiyor.
