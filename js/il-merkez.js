@@ -107,22 +107,35 @@ const IL_ETIKET_KAYDIR = {
 };
 
 /* Harita çerçevesi — çevre ülke ve deniz adlarına yer açmak için
-   orijinal viewBox (0 0 1007.478 527.323) dört yandan genişletilir. */
-const HARITA_VIEWBOX = "-78 -48 1166 556";
+   orijinal viewBox (0 0 1007.478 527.323) dört yandan genişletilir.
+
+   Ne kadar genişletileceği ölçüyle belirlendi: ülke + çevre yazıları
+   birlikte x −65…1073, y −29…487 aralığını kaplıyor. Çerçeve bunun
+   birkaç piksel dışında duruyor; daha fazlası ekranda boşa giden
+   kenar boşluğu demek. Türkiye enine bir ülke olduğu için harita
+   genişliğe göre sığar — çerçeveyi daraltmak doğrudan yakınlaştırır. */
+const HARITA_VIEWBOX = "-40 -32 1094 508";
 
 /* Çevre etiketleri: [x, y, metin, tip, fontBoyutu?] */
+/* Yan taraftaki yazılar çerçeveyi genişletiyordu: harita genişliğe göre
+   sığdığı için en soldaki ve en sağdaki yazı, haritanın ekranda ne kadar
+   büyük görüneceğini doğrudan belirliyor. Ege ve doğu sınırındaki yazılar
+   denizin/komşunun üstüne birkaç piksel içeri alındı — böylece çerçeve
+   daraldı ve Türkiye aynı ekranda daha büyük çiziliyor.
+   Alttaki AKDENİZ de yukarı çekildi; çerçevenin altı artık Hatay'ın
+   hemen altında bitiyor. */
 const CEVRE_ETIKETLERI = [
   [ 620, -16, "KARADENİZ",  "deniz", 15 ],
   [ 140, 100, "Marmara D.", "deniz", 8.5 ],
-  [ -18, 300, "EGE DENİZİ", "deniz", 11 ],
-  [ 350, 480, "AKDENİZ",    "deniz", 15 ],
+  [   6, 300, "EGE DENİZİ", "deniz", 11 ],
+  [ 350, 462, "AKDENİZ",    "deniz", 15 ],
 
   [  80, -18, "BULGARİSTAN", "ulke", 11 ],
-  [ -22, 118, "YUNANİSTAN",  "ulke", 11 ],
+  [   4, 118, "YUNANİSTAN",  "ulke", 11 ],
   [ 880, -16, "GÜRCİSTAN",   "ulke", 11 ],
-  [1035, 118, "ERMENİSTAN",  "ulke", 10 ],
-  [1030, 176, "NAHÇIVAN",    "ulke", 8.5 ],
-  [1048, 262, "İRAN",        "ulke", 11 ],
+  [1012, 118, "ERMENİSTAN",  "ulke", 10 ],
+  [1012, 176, "NAHÇIVAN",    "ulke", 8.5 ],
+  [1022, 262, "İRAN",        "ulke", 11 ],
   [ 905, 400, "IRAK",        "ulke", 11 ],
   [ 640, 442, "SURİYE",      "ulke", 11 ]
 ];
