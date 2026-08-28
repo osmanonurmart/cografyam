@@ -18,7 +18,7 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=37` → `?s=37` (9 yerde)
+1. `index.html` içindeki `?s=37` → `?s=38` (9 yerde)
 2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=37`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
