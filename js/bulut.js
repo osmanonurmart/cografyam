@@ -32,7 +32,7 @@ const Bulut = {
   _bekleyen: new Set(),
   _zaman: null,
   _uygulanan: false,    // snapshot uygularken geri gönderme döngüsünü kes
-  _uyardi: false,
+  _tamamlandi: new Set(),   // buluta bir kez tamamlanan koleksiyonlar
 
   baslat() {
     if (typeof firebase === "undefined" || typeof FIREBASE_YAPILANDIRMA === "undefined") {
@@ -115,14 +115,24 @@ const Bulut = {
     });
   },
 
-  /* Bulut boş, yerelde içerik var: yereli SİLME.
-     Boş listeyi yerele yazmak, bu cihazdaki bütün konuları silmek olurdu. */
+  /* Bulut boş, yerelde içerik var: yereli SİLME — boş listeyi yerele
+     yazmak bu cihazdaki her şeyi silmek olurdu.
+
+     Ama yalnızca korumak yetmiyordu: bulut o koleksiyon için boş kaldığı
+     sürece her açılışta uyarı çıkıyor ve durum hiç düzelmiyordu. Bu,
+     bulut kurulduktan sonra hiç dokunulmamış bir koleksiyonun başına
+     geliyor (gönderim ancak Depo.yaz ile tetikleniyor). Doğrusu eksiği
+     tamamlamak: yereli bir kez yukarı gönder, sonrası normal akış. */
   _bosBulutuYoksay(anahtar, gelen) {
     if (gelen.length) return false;
-    if (!Depo.oku(anahtar, []).length) return false;
-    if (!this._uyardi) {
-      this._uyardi = true;
-      bildir("Bulutta içerik yok — bu cihazdaki konular korundu");
+    const yerel = Depo.oku(anahtar, []);
+    if (!yerel.length) return false;
+
+    if (!this._tamamlandi.has(anahtar)) {
+      this._tamamlandi.add(anahtar);
+      this._anahtariGonder(anahtar)
+        .then(() => bildir("Bu cihazdaki içerik buluta yüklendi"))
+        .catch(e => console.warn("Eksik içerik yüklenemedi:", anahtar, e));
     }
     return true;
   },
