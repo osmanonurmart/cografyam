@@ -19,7 +19,7 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
 1. `index.html` içindeki `?s=42` → `?s=43` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=41`
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=42`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
