@@ -20,23 +20,30 @@ service cloud.firestore {
       return !(deger is string) || deger.size() <= enFazla;
     }
 
-    // Konu: adı olan, makul boyutta bir belge
+    // DİKKAT: `allow write` create + update + DELETE demektir. Silmede
+    // yazılan bir belge olmadığı için `request.resource` null olur;
+    // içine alan denetimi koyulursa kural değerlendirilemez ve SİLME
+    // SESSİZCE REDDEDİLİR. Bu yüzden delete ayrı tutuluyor.
+
     match /konular/{konuId} {
       allow read: if true;
-      allow write: if makul(request.resource.data.ad, 200);
+      allow create, update: if makul(request.resource.data.ad, 200);
+      allow delete: if true;
     }
 
     match /ustKonular/{ustId} {
       allow read: if true;
-      allow write: if makul(request.resource.data.ad, 200);
+      allow create, update: if makul(request.resource.data.ad, 200);
+      allow delete: if true;
     }
 
     // Palet görselleri: `veri` bir data: URL — 128x128 PNG ~10-40 KB.
     // Firestore belge sınırı 1 MB; 700 KB üstünü baştan reddediyoruz.
     match /gorseller/{gorselId} {
       allow read: if true;
-      allow write: if makul(request.resource.data.ad, 200)
-                   && makul(request.resource.data.veri, 700000);
+      allow create, update: if makul(request.resource.data.ad, 200)
+                            && makul(request.resource.data.veri, 700000);
+      allow delete: if true;
     }
 
     // Tek belgede duran kayıtlar: ayarlar/genel, ilerleme/genel, gunluk/genel

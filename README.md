@@ -18,8 +18,8 @@ firebase deploy --only firestore:rules  # kurallar değiştiyse
 
 Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
 
-1. `index.html` içindeki `?s=36` → `?s=37` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=36`
+1. `index.html` içindeki `?s=37` → `?s=37` (9 yerde)
+2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=37`
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.
@@ -79,6 +79,10 @@ açılış çalışmazdı.
   harita hep genişliğe göre sığar — ölçeği belirleyen tek sayı çerçeve genişliği,
   dikey kırpmanın etkisi yok. Çerçeve ülkenin sınırına çekildi (%97 doluluk),
   çevre yazıları kenarda kırpılıyor.
+- **Firestore kurallarında `allow write` create + update + DELETE demektir.**
+  Silmede `request.resource` null olduğu için içine alan denetimi koyulursa
+  kural değerlendirilemez ve silme sessizce reddedilir. `create, update` ile
+  `delete` ayrı yazılmalı — bu tuzağa bir kez düşüldü.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
 
 ### Kaynak

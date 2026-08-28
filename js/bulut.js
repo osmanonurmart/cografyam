@@ -158,7 +158,16 @@ const Bulut = {
     this._bekleyen.clear();
     for (const a of anahtarlar) {
       try { await this._anahtariGonder(a); }
-      catch (e) { console.warn("Buluta gönderilemedi:", a, e); }
+      catch (e) {
+        console.warn("Buluta gönderilemedi:", a, e);
+        /* Sessiz kalmak en kötüsü: kullanıcı sildiğini sanıp devam ediyor,
+           sonraki snapshot değişikliği geri getiriyor ve neden olduğu
+           anlaşılmıyor. Bu hata bir kez yaşandı — silme kuralı
+           reddediyordu ve hiçbir yerde görünmüyordu. */
+        bildir(e && e.code === "permission-denied"
+          ? "Bulut değişikliği reddetti — bu değişiklik kaydedilmedi"
+          : "Buluta gönderilemedi — bağlantıyı kontrol et");
+      }
     }
   },
 
