@@ -1144,12 +1144,12 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 /* konumlar */
 .konum-listesi{display:flex;flex-direction:column;gap:6px}
 .konum-satir{
-  display:flex;align-items:center;gap:7px;background:var(--bg2);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--bg2);
   border:1px solid var(--line);border-radius:10px;padding:6px 8px;
 }
 .konum-simge{flex:none;font-size:15px;line-height:1}
-.konum-il{flex:1;min-width:0;font-size:12.5px;color:var(--sonuk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.konum-ilce{flex:0 0 96px;min-width:0;padding:5px 7px;font-size:12.5px}
+.konum-il{flex:1 1 60px;min-width:0;font-size:12.5px;color:var(--sonuk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.konum-ilce{flex:1 1 60px;min-width:0;padding:5px 6px;font-size:12.5px}
 
 .konum-ekle{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .konum-ekle .alan-etiket{margin-right:2px}
@@ -1197,3 +1197,18 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
   display:grid;place-items:center;
 }
 .kart-bas.tiklanir{cursor:pointer}
+
+/* simge görselleri: haritadakiyle aynı resim, listede küçültülmüş */
+.simge-gorsel{width:20px;height:20px;object-fit:contain;display:block}
+.kart-simge.duzenlenir .simge-gorsel{width:20px;height:20px}
+.konum-simge .simge-gorsel{width:16px;height:16px}
+.konum-simge{display:grid;place-items:center;width:18px}
+
+/* konum satırında çerçeve kutucuğu — işaretlenen konum ayrı soru olur */
+.konum-cerceve{
+  flex:none;width:28px;height:28px;border-radius:8px;font-size:13px;line-height:1;
+  background:var(--panel2);border:1px solid var(--line);display:grid;place-items:center;
+  filter:grayscale(1);opacity:.5;
+}
+.konum-cerceve:hover{opacity:.85}
+.konum-cerceve.secili{filter:none;opacity:1;border-color:var(--mavi);background:#1d305a}

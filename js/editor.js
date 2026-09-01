@@ -19,6 +19,10 @@ let ekleModu = null;              // "isaret" | "cizgi" | "alan" | "balon"
 let bekleyen = null;              // konumu henüz olmayan yeni kart
 let simgeHedefi = null;           // simge kutusunun düzenlediği kart
 
+/* Açık <details> başlıkları. Liste her değişiklikte baştan çizildiği için
+   akordeonlar kapanıyordu; hangi bölümün açık olduğu burada tutuluyor. */
+const acikBolumler = new Set();
+
 const CIZGI_RENKLERI = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444", "#a78bfa", "#e2e8f0"];
 
 const DESENLER = [
@@ -60,13 +64,21 @@ function editorKonu() { return konuBul(durum.editorKonuId); }
    KARTLAR
    Kart = soru. Objeli kartta konumlar, yazılı kartta tek hedef.
 ---------------------------------------------------------- */
+/* Kartın anahtarı yalnızca ad. Çerçeve kartı bölmez — boksitin çıkarılan
+   ve işlenen yerlerini tek kartta yönetiyorsun; soruya dönüşürken
+   soruGrupAnahtari çerçeveye göre ikiye ayırıyor. */
+function kartGrupAnahtari(o) {
+  const ad = (o.ad || "").trim().toLocaleLowerCase("tr");
+  return ad ? "ad:: " + ad : "adsiz:: " + o.id;
+}
+
 function kartlar(konu) {
   const birim = konu.ayar.cevapBirimi || "il";
   const sorulanlar = new Set(birimeUyanlar(konu.objeler || [], birim).map(o => o.id));
 
   const gruplar = new Map();
   (konu.objeler || []).forEach(o => {
-    const a = soruGrupAnahtari(o);
+    const a = kartGrupAnahtari(o);
     if (!gruplar.has(a)) gruplar.set(a, []);
     gruplar.get(a).push(o);
   });
@@ -213,7 +225,7 @@ function kartiCiz(k, acikMi) {
   bas.innerHTML = `
     ${k.tip === "obje" && !sekilli
       ? `<button class="kart-simge duzenlenir" data-simge-ac title="Simgeyi değiştir">
-           ${guvenli(o.simge)}<span class="simge-kalem">✎</span></button>`
+           ${simgeIcerigi(k.objeler[0])}<span class="simge-kalem">✎</span></button>`
       : `<span class="kart-simge">${guvenli(o.simge)}</span>`}
     <b class="kart-ad">${guvenli(o.ad)}</b>
     ${o.sayi ? `<span class="sayi-rozet">${o.sayi}</span>` : ""}
@@ -235,7 +247,7 @@ function bekleyenKartiCiz() {
   kutu.innerHTML = `
     <div class="kart-bas">
       <button class="kart-simge duzenlenir" id="bekleyen-simge" title="Simgeyi seç">
-        ${guvenli(bekleyen.gorselId ? "🖼️" : (bekleyen.emoji || "📍"))}<span class="simge-kalem">✎</span>
+        ${simgeIcerigi(bekleyen)}<span class="simge-kalem">✎</span>
       </button>
       <input class="kart-ad-alan" id="bekleyen-ad" value="${guvenli(bekleyen.ad)}"
              placeholder="Ad (örn. Bor yatakları)" autocomplete="off">
@@ -296,10 +308,14 @@ function objeKartiGovde(k) {
     <div class="konum-listesi">
       ${k.objeler.map(o => `
         <div class="konum-satir">
-          <span class="konum-simge">${guvenli(ogeSimgesi(o))}</span>
+          <span class="konum-simge">${simgeIcerigi(o)}</span>
           <span class="konum-il">${guvenli(o.iller.join(", ") || "—")}</span>
           <input class="kucuk-alan konum-ilce" data-ilce="${o.id}"
                  value="${guvenli(o.ilce || "")}" placeholder="İlçe">
+          ${CERCEVELER.map(c => `
+            <button class="konum-cerceve ${o.cerceve === c.id ? "secili" : ""}"
+                    data-konum-cerceve="${o.id}:${c.id}"
+                    title="${guvenli(c.ad)} — işaretlersen ayrı soru olur">${c.simge}</button>`).join("")}
           <button class="satir-sil" data-konum-sil="${o.id}" title="Bu konumu sil">✕</button>
         </div>`).join("")}
     </div>
@@ -307,13 +323,15 @@ function objeKartiGovde(k) {
     ${konumEkleSatiri()}
     ${sekilli ? `<button class="ikincil-btn ince tam" data-il-yenile>${ilk.tip === "alan" ? "Kapsadığı" : "Geçtiği"} illeri yeniden bul</button>` : ""}
 
-    <details class="kart-bolum">
+    <details class="kart-bolum" data-bolum="soru" ${acikBolumler.has("soru") ? "open" : ""}>
       <summary>Soru metni</summary>
       <div class="ayar-satir minik">
         <div class="ayar-ad">İlçe ve çerçeve soruda görünsün</div>
         <button class="toggle ${ilk.ekGoster === false ? "" : "acik"}" data-ek role="switch"><span></span></button>
       </div>
-      <p class="ekle-ipucu">Yazmazsan otomatik: <b>${guvenli(otomatikSoru(ilk, konu))}</b></p>
+      <p class="ekle-ipucu">Bu kart ${kartinSorulari(k, konu).length > 1
+        ? "şu soruları üretiyor" : "şu soruyu üretiyor"}:<br>
+        ${kartinSorulari(k, konu).map(m => `<b>${guvenli(m)}</b>`).join("<br>")}</p>
       ${yazilanlar.map((metin, i) => `
         <div class="soru-metin-satir">
           <textarea class="kucuk-alan" data-soru="${i}" rows="2" placeholder="Soru metni">${guvenli(metin)}</textarea>
@@ -322,7 +340,7 @@ function objeKartiGovde(k) {
       <button class="ikincil-btn ince tam" data-soru-ekle>＋ Soru ekle</button>
     </details>
 
-    <details class="kart-bolum">
+    <details class="kart-bolum" data-bolum="gorunum" ${acikBolumler.has("gorunum") ? "open" : ""}>
       <summary>Görünüm</summary>
       ${sekilli ? `
         <div class="kaydirici">
@@ -356,15 +374,10 @@ function objeKartiGovde(k) {
           <label class="alan-etiket">Yön <b data-aci-deger>${ilk.aci || 0}°</b></label>
           <input type="range" data-aci min="-180" max="180" step="5" value="${ilk.aci || 0}">
         </div>
-        <label class="alan-etiket">Çerçeve</label>
-        <div class="cerceve-secim">
-          <button class="cerceve-ogesi ${ilk.cerceve ? "" : "secili"}" data-cerceve="">Yok</button>
-          ${CERCEVELER.map(c => `<button class="cerceve-ogesi ${ilk.cerceve === c.id ? "secili" : ""}" data-cerceve="${c.id}">${c.simge} ${guvenli(c.ad)}</button>`).join("")}
-        </div>
       `}
     </details>
 
-    <details class="kart-bolum">
+    <details class="kart-bolum" data-bolum="balon" ${acikBolumler.has("balon") ? "open" : ""}>
       <summary>Baloncuklar <span class="sayi-rozet">${k.objeler.reduce((t, o) => t + (o.baloncuklar || []).length, 0)}</span></summary>
       ${k.objeler.map(o => (o.baloncuklar || []).map((b, i) => `
         <div class="balon-satir">
@@ -381,6 +394,31 @@ function objeKartiGovde(k) {
 
   objeKartiOlaylari(govde, k);
   return govde;
+}
+
+/* Kartın ürettiği soru metinleri. Çerçeve işaretlenmiş konumlar ayrı bir
+   soru olur — kartta ikisi birden gösterilir ki ne sorulacağı belli olsun. */
+function kartinSorulari(k, konu) {
+  const gruplar = new Map();
+  k.objeler.forEach(o => {
+    const a = soruGrupAnahtari(o);
+    if (!gruplar.has(a)) gruplar.set(a, []);
+    gruplar.get(a).push(o);
+  });
+  const birim = konu.ayar.cevapBirimi || "il";
+  const metinler = [];
+  gruplar.forEach(grup => {
+    const yazilan = [];
+    grup.forEach(o => (o.sorular || []).forEach(x => {
+      const m = (x.metin || "").trim();
+      if (m && !yazilan.includes(m)) yazilan.push(m);
+    }));
+    if (yazilan.length) { metinler.push(...yazilan); return; }
+    const iller = [];
+    grup.forEach(o => o.iller.forEach(il => { if (!iller.includes(il)) iller.push(il); }));
+    metinler.push(otomatikSoruMetni(grup, birim, soruEki(grup), iller.length));
+  });
+  return metinler;
 }
 
 function objeKartiOlaylari(govde, k) {
@@ -407,6 +445,14 @@ function objeKartiOlaylari(govde, k) {
     if (o) { o.ilce = inp.value.trim(); kutuphaneKaydet(); }
   }));
 
+  $$("[data-konum-cerceve]", govde).forEach(b => b.addEventListener("click", () => {
+    const [id, cid] = b.dataset.konumCerceve.split(":");
+    const o = konu.objeler.find(x => x.id === id);
+    if (!o) return;
+    o.cerceve = o.cerceve === cid ? null : cid;
+    kutuphaneKaydet(); editorTazele();
+  }));
+
   $$("[data-konum-sil]", govde).forEach(b => b.addEventListener("click", () => {
     const id = b.dataset.konumSil;
     konu.objeler = konu.objeler.filter(x => x.id !== id);
@@ -415,6 +461,11 @@ function objeKartiOlaylari(govde, k) {
       acikKart = kalan ? { tip: "obje", id: kalan.id } : null;
     }
     kutuphaneKaydet(); editorTazele();
+  }));
+
+  $$("[data-bolum]", govde).forEach(d => d.addEventListener("toggle", () => {
+    if (d.open) acikBolumler.add(d.dataset.bolum);
+    else acikBolumler.delete(d.dataset.bolum);
   }));
 
   konumEkleOlaylari(govde);
@@ -499,9 +550,6 @@ function objeKartiOlaylari(govde, k) {
   }));
   $$("[data-renk]", govde).forEach(b => b.addEventListener("click", () => {
     hepsi("renk", b.dataset.renk); editorTazele();
-  }));
-  $$("[data-cerceve]", govde).forEach(b => b.addEventListener("click", () => {
-    hepsi("cerceve", b.dataset.cerceve || null); editorTazele();
   }));
 
   /* baloncuklar */
@@ -705,6 +753,15 @@ function ogeSimgesi(o) {
   if (o.tip === "alan") return "⬭";
   if (o.gorselId) return gorselBul(o.gorselId) ? "🖼️" : "❔";
   return o.emoji || "📍";
+}
+
+/* Listede simge haritadakiyle aynı görünsün: görsel objelerde genel bir
+   🖼️ değil görselin kendisi çizilir, yoksa simgeyi değiştirdiğinde sağ
+   taraf değişmemiş gibi duruyordu. */
+function simgeIcerigi(o) {
+  const g = o.gorselId ? gorselBul(o.gorselId) : null;
+  if (g) return `<img class="simge-gorsel" src="${guvenli(g.veri)}" alt="">`;
+  return guvenli(ogeSimgesi(o));
 }
 
 /* ----------------------------------------------------------
