@@ -155,6 +155,7 @@ input,textarea,select{font-family:inherit}
   border-radius:14px;padding:14px 16px;margin-bottom:10px;
 }
 .ayar-yazi{flex:1;min-width:0}
+.ayar-satir > .ayar-ad{flex:1;min-width:0}
 .ayar-ad{font-weight:700;font-size:15px}
 .ayar-alt{color:var(--sonuk);font-size:12.5px;line-height:1.5;margin-top:3px}
 .toggle{
@@ -659,7 +660,6 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
    kutularda tam aynı noktada durur ve iki düğme hiçbir genişlikte üst üste
    binmez — kutu ne kadar darsa da yan yana kalırlar. */
 .k-eylem{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:auto;min-height:36px}
-.k-sifirla.bos{visibility:hidden;pointer-events:none}
 .k-durum,.k-sifirla{
   position:relative;width:36px;height:36px;border-radius:50%;flex:none;
   background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.18);
@@ -761,6 +761,7 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .satir-ayar{color:var(--sonuk);font-size:15px;padding:5px 7px;border-radius:8px;flex:none}
 .satir-ayar:hover{color:var(--metin);background:var(--panel2)}
 .renk-nokta{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,.25);flex:none}
+.renk-nokta.secili{border-color:#fff;box-shadow:0 0 0 2px var(--mavi)}
 .renk-nokta.buyuk{width:38px;height:38px}
 .duzen-satir.suruklenen,.ust-blok.suruklenen{
   position:fixed;z-index:120;pointer-events:none;opacity:.95;
@@ -775,10 +776,23 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
   display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px;margin-bottom:18px;
   background:linear-gradient(160deg,var(--k1),var(--k2));border:1px solid var(--line);
 }
-.ozet-emoji{font-size:34px}
-.ozet-ad{font-size:19px;font-weight:800}
+/* Simge bir düğme: tıklayınca simge ve renk kutusu açılır */
+.ozet-emoji{
+  font-size:34px;line-height:1;flex:none;padding:6px 8px;border-radius:12px;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.18);transition:background .15s ease;
+}
+.ozet-emoji:hover{background:rgba(0,0,0,.34)}
+/* Ad doğrudan yazılabilir; kutu görünmez, odakta belirir */
+.ozet-ad{
+  font-size:19px;font-weight:800;width:100%;color:inherit;font-family:inherit;
+  background:transparent;border:1px solid transparent;border-radius:9px;
+  padding:3px 6px;margin:-3px -6px;outline:none;
+}
+.ozet-ad:hover{background:rgba(0,0,0,.16)}
+.ozet-ad:focus{background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.35)}
 .ozet-alt{font-size:12.5px;color:rgba(255,255,255,.75);margin-top:2px}
 .ayar-alani{display:block}
+#btn-ayardan-duzenle{margin-top:6px}
 
 @media (max-width:640px){
   .ust-govde,.serbest-govde{grid-template-columns:repeat(3,1fr);gap:9px}
@@ -1093,3 +1107,77 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .cerceve-ogesi.secili{border-color:var(--mavi);color:var(--metin);background:#1d305a}
 .grup-notu{font-size:12px;color:var(--sonuk);margin:2px 0 6px;line-height:1.4}
 .grup-notu b{color:var(--metin)}
+
+/* ================= DÜZENLE: KART LİSTESİ =================
+   Tek liste, tek akış. Kapalı kart tek satır; açılınca gövdesi iner.
+   Nadir ayarlar <details> içinde katlı durur. */
+.kart-listesi{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.kart{
+  background:var(--panel);border:1px solid var(--line);border-radius:13px;
+  overflow:hidden;transition:border-color .15s ease;
+}
+.kart:hover{border-color:rgba(255,255,255,.2)}
+.kart.acik{border-color:var(--mavi);background:var(--panel2)}
+.kart.sorulmaz{opacity:.55}
+.kart.bekleyen{border-style:dashed;border-color:var(--mavi)}
+
+.kart-bas{
+  display:flex;align-items:center;gap:9px;width:100%;text-align:left;
+  padding:11px 12px;font-size:14px;color:var(--metin);
+}
+.kart-simge{font-size:18px;line-height:1;flex:none}
+.kart-ad{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.kart-not{font-size:11px;color:var(--sonuk);flex:none}
+.kart-ad-alan{
+  flex:1;min-width:0;background:var(--bg2);border:1px solid var(--line);border-radius:9px;
+  padding:7px 9px;font-size:14px;font-weight:700;color:var(--metin);outline:none;
+}
+.kart-ad-alan:focus{border-color:var(--mavi)}
+
+.kart-govde{
+  display:flex;flex-direction:column;gap:9px;padding:0 12px 12px;
+  border-top:1px solid var(--line);padding-top:11px;
+}
+
+/* konumlar */
+.konum-listesi{display:flex;flex-direction:column;gap:6px}
+.konum-satir{
+  display:flex;align-items:center;gap:7px;background:var(--bg2);
+  border:1px solid var(--line);border-radius:10px;padding:6px 8px;
+}
+.konum-simge{flex:none;font-size:15px;line-height:1}
+.konum-il{flex:1;min-width:0;font-size:12.5px;color:var(--sonuk);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.konum-ilce{flex:0 0 96px;min-width:0;padding:5px 7px;font-size:12.5px}
+
+.konum-ekle{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.konum-ekle .alan-etiket{margin-right:2px}
+.konum-btn{
+  width:34px;height:32px;border-radius:9px;background:var(--panel2);
+  border:1px solid var(--line);font-size:15px;line-height:1;
+  display:grid;place-items:center;
+}
+.konum-btn:hover{border-color:rgba(255,255,255,.3)}
+.konum-btn.secili{background:var(--mavi);border-color:var(--mavi)}
+.ekle-ipucu{
+  margin:0;font-size:12px;color:var(--sonuk);line-height:1.45;
+  background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:7px 9px;
+}
+.ekle-ipucu b{color:var(--metin)}
+
+/* katlanan bölümler */
+.kart-bolum{border-top:1px solid var(--line);padding-top:9px}
+.kart-bolum > summary{
+  cursor:pointer;font-size:12px;font-weight:700;color:var(--sonuk);
+  text-transform:uppercase;letter-spacing:.7px;list-style:none;
+  display:flex;align-items:center;gap:7px;padding:2px 0;
+}
+.kart-bolum > summary::-webkit-details-marker{display:none}
+.kart-bolum > summary::before{content:"▸";font-size:11px;transition:transform .15s ease}
+.kart-bolum[open] > summary::before{transform:rotate(90deg)}
+.kart-bolum > summary:hover{color:var(--metin)}
+.kart-bolum > *:not(summary){margin-top:8px}
+
+.kart-altlik{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:9px}
+.metin-btn.tehlike{color:#fca5a5}
+
+.kart-ekle-satir{display:flex;flex-direction:column;gap:7px;margin-top:10px}

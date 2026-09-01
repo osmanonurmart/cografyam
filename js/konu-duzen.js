@@ -264,49 +264,77 @@ function konuAyarEkraniCiz() {
   const soru = sorulariUret(konu).length;
   const ust = konu.ustKonuId ? ustKonuBul(konu.ustKonuId) : null;
 
+  /* Üst kart hem özet hem düzenleme yüzeyi: ada tıkla adı yaz,
+     simgeye tıkla simge ve rengi seç. Ayrı bir "Görünüm" bölümü yok. */
   govde.innerHTML = `
     <div class="konu-ozet" style="--k1:${guvenli(konu.renk)};--k2:${karart(konu.renk, 0.45)}">
-      <span class="ozet-emoji">${guvenli(konu.ikon)}</span>
+      <button class="ozet-emoji" id="btn-konu-gorunum" title="Simge ve rengi değiştir">${guvenli(konu.ikon)}</button>
       <div class="ozet-yazi">
-        <div class="ozet-ad">${guvenli(konu.ad)}</div>
+        <input class="ozet-ad" id="konu-ad-alan" value="${guvenli(konu.ad)}" maxlength="28"
+               placeholder="Konu adı" title="Adı değiştirmek için tıkla">
         <div class="ozet-alt">${soru} soru · ${ust ? guvenli(ust.ikon + " " + ust.ad) : "kapsayıcısız"}</div>
       </div>
     </div>
     <div class="ayar-alani" id="ayar-alani"></div>
-    <h2 class="bolum-baslik">Görünüm</h2>
-    <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Konu adı ve simgesi</div>
-        <div class="ayar-alt">Ana ekranda görünen ad ve emoji.</div>
-      </div>
-    </div>
-    <div class="ekle-satir">
-      <button class="ikincil-btn" id="btn-konu-emoji">${guvenli(konu.ikon)}</button>
-      <input class="kucuk-alan" id="konu-ad-alan" value="${guvenli(konu.ad)}" placeholder="Konu adı">
-      <button class="renk-nokta buyuk" id="btn-konu-renk" style="background:${guvenli(konu.renk)}"></button>
-    </div>`;
+    <button class="ana-btn tam" id="btn-ayardan-duzenle">Sorulara geç →</button>`;
 
   konuAyarIcerik(konu, $("#ayar-alani"));
 
-  $("#konu-ad-alan").addEventListener("change", e => {
-    konu.ad = e.target.value.trim() || konu.ad;
+  const adAlani = $("#konu-ad-alan");
+  adAlani.addEventListener("input", () => {
+    konu.ad = adAlani.value.trim() || konu.ad;
     kutuphaneKaydet();
+  });
+  adAlani.addEventListener("change", () => {
     konuSeciciDoldur($("#konu-ayar-sec"));
     $("#konu-ayar-sec").value = konu.id;
-    konuAyarEkraniCiz();
   });
-  $("#btn-konu-emoji").addEventListener("click", () => {
-    const i = KONU_IKONLARI.indexOf(konu.ikon);
-    konu.ikon = KONU_IKONLARI[(i + 1) % KONU_IKONLARI.length];
-    kutuphaneKaydet();
-    konuAyarEkraniCiz();
+
+  $("#btn-konu-gorunum").addEventListener("click", () => konuGorunumAc(konu));
+  /* Akışın devamı: ayarları seçtin, şimdi soruları yaz */
+  $("#btn-ayardan-duzenle").addEventListener("click", () => {
+    durum.editorKonuId = konu.id;
+    editorAc();
   });
-  $("#btn-konu-renk").addEventListener("click", () => {
-    const i = RENKLER.indexOf(konu.renk);
-    konu.renk = RENKLER[(i + 1) % RENKLER.length];
-    kutuphaneKaydet();
-    konuAyarEkraniCiz();
-  });
+}
+
+/* Simge ve renk kutusu — seçim anında uygulanır, kaydet düğmesi yok. */
+function konuGorunumAc(konu) {
+  const kutu = $("#modal-konu-gorunum");
+  const ikonlar = $("#gorunum-ikon-secim");
+  const renkler = $("#gorunum-renk-secim");
+
+  const ciz = () => {
+    ikonlar.innerHTML = "";
+    KONU_IKONLARI.forEach(i => {
+      const b = document.createElement("button");
+      b.className = "sec-ogesi" + (konu.ikon === i ? " secili" : "");
+      b.textContent = i;
+      b.addEventListener("click", () => {
+        konu.ikon = i;
+        kutuphaneKaydet();
+        ciz();
+        konuAyarEkraniCiz();
+      });
+      ikonlar.appendChild(b);
+    });
+    renkler.innerHTML = "";
+    RENKLER.forEach(r => {
+      const b = document.createElement("button");
+      b.className = "renk-nokta" + (konu.renk === r ? " secili" : "");
+      b.style.background = r;
+      b.addEventListener("click", () => {
+        konu.renk = r;
+        kutuphaneKaydet();
+        ciz();
+        konuAyarEkraniCiz();
+      });
+      renkler.appendChild(b);
+    });
+  };
+
+  ciz();
+  kutu.classList.remove("gizli");
 }
 
 function konuDuzenOlaylari() {
@@ -330,4 +358,9 @@ function konuDuzenOlaylari() {
     konuAyarEkraniCiz();
   });
   $("#btn-yeni-konu-ayar").addEventListener("click", konuEkleModalAc);
+
+  $("#btn-gorunum-kapat").addEventListener("click", () => $("#modal-konu-gorunum").classList.add("gizli"));
+  $("#modal-konu-gorunum").addEventListener("click", e => {
+    if (e.target.id === "modal-konu-gorunum") e.target.classList.add("gizli");
+  });
 }

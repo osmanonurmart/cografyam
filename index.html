@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=45">
+<link rel="stylesheet" href="css/style.css?s=49">
 </head>
 <body>
 
@@ -142,7 +142,7 @@
     <div class="ayar-satir">
       <div class="ayar-yazi">
         <div class="ayar-ad">Birikimli öğrenme</div>
-        <div class="ayar-alt">Açıkken cevapladığın objeler haritada kalır ve üst üste birikir. Kapalıyken sonraki soruya geçince kaybolur.</div>
+        <div class="ayar-alt">Açıkken cevapladığın seçim birimleri haritada kalır ve üst üste birikir. Kapalıyken sonraki soruya geçince kaybolur.</div>
       </div>
       <button class="toggle" id="toggle-birikimli" role="switch"><span></span></button>
     </div>
@@ -150,7 +150,7 @@
     <div class="ayar-satir">
       <div class="ayar-yazi">
         <div class="ayar-ad">Soruları karıştır</div>
-        <div class="ayar-alt">Açıkken konuya her baştan girişinde sorular farklı sırayla gelir. Kapalıyken objelerin eklenme sırasını izler. Yarıda bıraktığın konu, döndüğünde aynı sırayla devam eder.</div>
+        <div class="ayar-alt">Açıkken konuya her baştan girişinde sorular farklı sırayla gelir. Kapalıyken seçim birimlerinin eklenme sırasını izler. Yarıda bıraktığın konu, döndüğünde aynı sırayla devam eder.</div>
       </div>
       <button class="toggle" id="toggle-karistir" role="switch"><span></span></button>
     </div>
@@ -199,7 +199,7 @@
     <div class="ayar-satir">
       <div class="ayar-yazi">
         <div class="ayar-ad">Bu profilin ilerlemesini sil</div>
-        <div class="ayar-alt">Tüm konulardaki kayıtlar ve istatistikler silinir. Konuların ve objelerin durur.</div>
+        <div class="ayar-alt">Tüm konulardaki kayıtlar ve istatistikler silinir. Konuların ve seçim birimlerin durur.</div>
       </div>
       <button class="tehlike-btn" id="btn-ilerleme-sil">Temizle</button>
     </div>
@@ -259,78 +259,23 @@
     </div>
 
     <aside class="editor-panel">
-      <!-- 1. satır: konu seçimi + konu yönetimi -->
+      <!-- konu seçimi ve ayarlara geçiş -->
       <div class="panel-satir">
         <select class="secici tam" id="editor-konu"></select>
-        <button class="ikon-btn kucuk" id="btn-konu-yonet" title="Konu sırası ve silme">⚙</button>
+        <button class="ikon-btn kucuk" id="btn-konu-yonet" title="Konu ayarları">⚙</button>
       </div>
 
-      <!-- 2. satır: harita / soru -->
-      <div class="segment" id="mod-segment">
-        <button class="segment-btn secili" data-mod="harita">🗺️ Harita</button>
-        <button class="segment-btn" data-mod="soru">✏️ Soru</button>
-      </div>
-
-      <!-- 3. satır: araçlar -->
-      <div class="segment araclar" id="arac-segment">
-        <button class="segment-btn secili" data-arac="sec" title="Seç">👆</button>
-        <button class="segment-btn" data-arac="yerlestir" title="Yerleştir">📍</button>
-        <button class="segment-btn" data-arac="ciz" title="Çiz">✏️</button>
-        <button class="segment-btn" data-arac="alan" title="Alan">
-          <svg viewBox="0 0 24 24" class="alan-simge" aria-hidden="true">
-            <ellipse cx="12" cy="12" rx="9.2" ry="6.4" fill="none" stroke="currentColor" stroke-width="2"/>
-          </svg>
-        </button>
-        <button class="segment-btn" data-arac="balon" title="Baloncuk">💬</button>
-      </div>
-
+      <!-- çizim sürerken görünen tek satır -->
       <div class="cizim-btnler">
-        <button class="ana-btn ince gizli" id="btn-cizim-bitir">Alanı tamamla</button>
+        <button class="ana-btn ince gizli" id="btn-cizim-bitir">Tamamla</button>
         <button class="ikincil-btn ince gizli" id="btn-cizim-iptal">İptal</button>
       </div>
 
-      <!-- HARİTA MODU -->
-      <div id="panel-harita">
-        <div class="panel-bolum" id="emoji-bolumu">
-          <div class="baslik-satir">
-            <label class="alan-etiket">Eklenecek emoji</label>
-            <div class="liste-arac">
-              <label class="alan-etiket" for="cerceve-toggle">Çerçeve</label>
-              <button class="toggle" id="cerceve-toggle" role="switch"
-                      title="Açıkken haritaya koyduğun her obje seçili çerçeveyle eklenir"><span></span></button>
-            </div>
-          </div>
-          <div class="cerceve-secim gizli" id="cerceve-palet"></div>
-          <div class="secim-satir" id="emoji-secim"></div>
-          <input type="text" id="emoji-ozel" class="kucuk-alan" maxlength="6" placeholder="veya emoji yapıştır">
-          <input type="file" id="gorsel-dosya" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
-        </div>
+      <!-- tek liste: her kart bir soru -->
+      <div class="kart-listesi" id="kart-listesi"></div>
 
-        <div class="panel-bolum">
-          <div class="baslik-satir">
-            <label class="alan-etiket">Objeler <span class="sayi-rozet" id="obje-sayisi">0</span></label>
-            <div class="liste-arac">
-              <button class="mini-ekle" id="btn-obje-sec" title="Çoklu seçim">☑</button>
-              <button class="mini-ekle gizli" id="btn-obje-kopyala" title="Seçilenleri kopyala">📋</button>
-              <button class="mini-ekle gizli" id="btn-obje-yapistir" title="Yapıştır">📥</button>
-              <button class="mini-ekle" id="btn-obje-ekle" title="Yeni obje">+</button>
-            </div>
-          </div>
-          <div class="obje-listesi" id="obje-listesi"></div>
-        </div>
-
-        <!-- seçili obje paneli listenin ALTINDA: yukarıda seç, aşağıda işle -->
-        <div class="panel-bolum gizli" id="obje-panel"></div>
-      </div>
-
-      <!-- SORU MODU -->
-      <div id="panel-soru" class="gizli">
-        <div class="panel-bolum">
-          <label class="alan-etiket">Sorular <span class="sayi-rozet" id="soru-sayisi">0</span></label>
-          <div class="soru-tablo" id="soru-tablo"></div>
-          <div id="soru-ekle-alani"></div>
-        </div>
-      </div>
+      <div class="kart-ekle-satir" id="kart-ekle-satir"></div>
+      <input type="file" id="gorsel-dosya" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
     </aside>
   </div>
 </section>
@@ -340,6 +285,34 @@
 
 <!-- ============ PROFİL MODALI ============ -->
 <!-- ============ YENİ KONU MODALI ============ -->
+<div class="modal gizli" id="modal-oge-simge">
+  <div class="modal-kart">
+    <h3>Simge</h3>
+    <div class="secim-satir" id="oge-simge-secim"></div>
+    <label class="alan-etiket">Kendi simgen</label>
+    <div class="ekle-satir dar">
+      <input type="text" id="oge-simge-ozel" class="kucuk-alan" maxlength="6" placeholder="Emoji yapıştır">
+      <button class="ikincil-btn ince" id="btn-oge-gorsel">⬆ Görsel</button>
+    </div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-oge-simge-kapat">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal gizli" id="modal-konu-gorunum">
+  <div class="modal-kart">
+    <h3>Simge ve renk</h3>
+    <label class="alan-etiket">Simge</label>
+    <div class="secim-satir" id="gorunum-ikon-secim"></div>
+    <label class="alan-etiket">Renk</label>
+    <div class="secim-satir" id="gorunum-renk-secim"></div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-gorunum-kapat">Tamam</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal gizli" id="modal-konu-ekle">
   <div class="modal-kart">
     <h3>Yeni Konu</h3>
@@ -384,17 +357,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=45"></script>
-<script src="js/il-merkez.js?s=45"></script>
-<script src="js/komsular.js?s=45"></script>
-<script src="js/hazir-icerik.js?s=45"></script>
+<script src="js/harita-turkiye.js?s=49"></script>
+<script src="js/il-merkez.js?s=49"></script>
+<script src="js/komsular.js?s=49"></script>
+<script src="js/hazir-icerik.js?s=49"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=45"></script>
-<script src="js/data.js?s=45"></script>
-<script src="js/app.js?s=45"></script>
-<script src="js/bulut.js?s=45"></script>
-<script src="js/editor.js?s=45"></script>
-<script src="js/konu-duzen.js?s=45"></script>
+<script src="js/firebase-config.js?s=49"></script>
+<script src="js/data.js?s=49"></script>
+<script src="js/app.js?s=49"></script>
+<script src="js/bulut.js?s=49"></script>
+<script src="js/editor.js?s=49"></script>
+<script src="js/konu-duzen.js?s=49"></script>
 </body>
 </html>

@@ -89,10 +89,7 @@ const durum = {
 
   ekranGecmisi: [],
   editorOnizleme: "duzenle",
-  secimModu: false,
-  seciliCoklu: new Set(),
-  editorKonuId: null,
-  seciliObjeId: null
+  editorKonuId: null
 };
 
 const AVATARLAR = ["🙂", "🦊", "🐼", "🐯", "🦉", "🐢", "🦅", "🐬", "🌍", "⛰️", "🚀", "📚"];
@@ -351,6 +348,25 @@ const CERCEVELER = [
   { id: "fabrika", ad: "İşleniyor", simge: "🏭" }
 ];
 
+/* Cevap birimleri. "obje" her türü kapsar; "alan" ve "cizgi" yalnızca o
+   türdeki seçim birimlerini sorar ve tıklatır. İl ve bölge haritanın
+   kendisine tıklanarak cevaplanır. */
+const BIRIMLER = [
+  ["il", "İl"], ["bolge", "Bölge"], ["obje", "Obje"], ["alan", "Alan"], ["cizgi", "Çizgi"]
+];
+
+/* Cevap haritadaki bir seçim birimine tıklanarak mı veriliyor? */
+function birimObjeMi(birim) {
+  return birim === "obje" || birim === "alan" || birim === "cizgi";
+}
+
+/* Bu birimde hangi seçim birimleri sorulur? */
+function birimeUyanlar(objeler, birim) {
+  if (birim === "alan")  return objeler.filter(o => o.tip === "alan");
+  if (birim === "cizgi") return objeler.filter(o => o.tip === "cizgi");
+  return objeler;
+}
+
 function cerceveBul(id) {
   return id ? (CERCEVELER.find(c => c.id === id) || null) : null;
 }
@@ -558,7 +574,7 @@ function ekiUygula(metin, ek) {
    "Bor yatakları (Bigadiç, Kırka) hangi illerimizdedir?" */
 function otomatikSoruMetni(grup, birim, ek, ilAdedi) {
   const ad = (grup[0].ad || "…") + (ek || "");
-  if (birim === "obje") return `Hangisi ${ad}?`;
+  if (birimObjeMi(birim)) return `Hangisi ${ad}?`;
   if (birim === "bolge") return `${ad} hangi bölgemizdedir?`;
   return ilAdedi > 1 ? `${ad} hangi illerimizdedir?` : `${ad} hangi ilimizdedir?`;
 }
@@ -569,9 +585,10 @@ function otomatikSoruMetni(grup, birim, ek, ilAdedi) {
 function sorulariUret(konu) {
   const birim = konu.ayar.cevapBirimi || "il";
 
-  if (konu.objeler && konu.objeler.length) {
+  const uygun = birimeUyanlar(konu.objeler || [], birim);
+  if (uygun.length) {
     const gruplar = new Map();
-    konu.objeler.forEach(o => {
+    uygun.forEach(o => {
       const anahtar = soruGrupAnahtari(o);
       if (!gruplar.has(anahtar)) gruplar.set(anahtar, []);
       gruplar.get(anahtar).push(o);
@@ -598,7 +615,7 @@ function sorulariUret(konu) {
         metin,
         birim,
         hedefIller: iller.slice(),
-        hedefObjeler: birim === "obje" ? idler.slice() : [],
+        hedefObjeler: birimObjeMi(birim) ? idler.slice() : [],
         objeId: idler[0],
         objeIdler: idler.slice()
       }));
@@ -607,7 +624,7 @@ function sorulariUret(konu) {
   }
 
   // objesiz konular (elle yazılmış sorular)
-  const varsayilan = birim === "obje" ? "il" : birim;
+  const varsayilan = birimObjeMi(birim) ? "il" : birim;
   return (konu.sorular || []).map(s => {
     if (s.bolge) {
       return { metin: s.metin, birim: "bolge", bolge: s.bolge,
@@ -1725,7 +1742,7 @@ function konuKutusu(konu) {
       </button>
       ${(yarim || bitti)
         ? `<button class="k-sifirla" title="Sıfırdan başla" aria-label="Sıfırdan başla">↺</button>`
-        : `<span class="k-sifirla bos" aria-hidden="true"></span>`}
+        : ""}
     </div>`;
 
   kutu.addEventListener("click", ev => {
@@ -1861,10 +1878,10 @@ function haritayiHazirla() {
     const objeEl = ev.target.closest(".obje[data-obje]");
     if (objeEl) {
       const soru = durum.sorular[durum.index];
-      if (soru && soru.birim === "obje") { objeyeCevapla(objeEl.getAttribute("data-obje")); return; }
+      if (soru && birimObjeMi(soru.birim)) { objeyeCevapla(objeEl.getAttribute("data-obje")); return; }
     }
     const soru = durum.sorular[durum.index];
-    if (soru && soru.birim === "obje") return;   // obje modunda iller tıklanmaz
+    if (soru && birimObjeMi(soru.birim)) return;   // seçim birimi modunda iller tıklanmaz
     const g = ev.target.closest("g[data-plakakodu]");
     if (!g) return;
     const plaka = g.getAttribute("data-plakakodu");
@@ -1951,7 +1968,7 @@ function hayaletAcilanlar() {
   const acik = new Set(durum.hayaletGecici);
   if (durum.ayarlar.birikimli) durum.kalanObjeler.forEach(id => acik.add(id));
   const soru = durum.sorular[durum.index];
-  if (soru && soru.birim === "obje") durum.bulunanlar.forEach(id => acik.add(id));
+  if (soru && birimObjeMi(soru.birim)) durum.bulunanlar.forEach(id => acik.add(id));
   if (durum.kilit && soru) (soru.objeIdler || []).forEach(id => acik.add(id));
   return acik;
 }
@@ -1984,7 +2001,7 @@ function objeGorunurlukTazele() {
   if (!objeliMi) return;
 
   const soru = durum.sorular[durum.index];
-  const objeModu = soru && soru.birim === "obje";
+  const objeModu = soru && birimObjeMi(soru.birim);
 
   // adlar — hayalet modda toplu gösterim kapalı, adlar tek tek açılır
   const adlarAcik = konu.ayar.objeAdlari === "gorunsun" && !hayaletAktifMi(konu);
@@ -2037,7 +2054,7 @@ function soruyuGoster() {
   calismaHarita.tumBalonlar(false);
   calismaHarita.objeIsaretleriTemizle();
   isimleriTazele();
-  const objeModu = soru.birim === "obje";
+  const objeModu = birimObjeMi(soru.birim);
   const bolgeModu = soru.birim === "bolge";
   $("#harita-alan").classList.toggle("obje-modu", objeModu);
   $("#harita-alan").classList.toggle("bolge-modu", bolgeModu);
@@ -2163,7 +2180,7 @@ function tekrarDene() {
   objeleriTazele();
 
   const soru = durum.sorular[durum.index];
-  const objeModu = soru && soru.birim === "obje";
+  const objeModu = soru && birimObjeMi(soru.birim);
   durum.bulunanlar.forEach(x => {
     if (objeModu) { calismaHarita.objeIsaretle(x, "dogru"); calismaHarita.objeAdiGoster(x, true); }
     else calismaHarita.boya(x, "dogru");
@@ -2208,7 +2225,7 @@ function soruyuBitir(aciklama) {
 function objeyeCevapla(objeId) {
   if (durum.kilit || durum.duraklatildi) return;
   const soru = durum.sorular[durum.index];
-  if (!soru || soru.birim !== "obje") return;
+  if (!soru || !birimObjeMi(soru.birim)) return;
 
   const hedefler = soru.hedefObjeler;
   const objeAdi = (id) => {
@@ -2338,78 +2355,53 @@ function calismadanCik() {
    ========================================================== */
 function konuAyarIcerik(konu, hedefEl) {
   const a = konu.ayar;
+  const birim = a.cevapBirimi || "il";
+  const hayaletPasif = birim === "il";     // il sorusunda objenin şekli zaten cevabı vermez
+
+  const anahtar = (ad, alan, acik, pasif) => `
+    <div class="ayar-satir${pasif ? " pasif-ayar" : ""}">
+      <div class="ayar-ad">${ad}</div>
+      <button class="toggle ${acik ? "acik" : ""}" data-ayar="${alan}" role="switch"
+              ${pasif ? "disabled" : ""}><span></span></button>
+    </div>`;
+
   hedefEl.innerHTML = `
-    <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">İl isimleri görünsün</div>
-        <div class="ayar-alt">Harita üzerinde il adları yazılı olur.</div>
-      </div>
-      <button class="toggle ${a.ilIsimleri ? "acik" : ""}" data-ayar="ilIsimleri" role="switch"><span></span></button>
+    <div class="ayar-satir dikey">
+      <div class="ayar-ad">Cevap birimi</div>
+      <select class="secici tam" id="ayar-birim">
+        ${BIRIMLER.map(([d, ad]) =>
+          `<option value="${d}" ${birim === d ? "selected" : ""}>${ad}</option>`).join("")}
+      </select>
     </div>
 
-    <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Objeler baştan görünsün</div>
-        <div class="ayar-alt">Açık: konudaki tüm objeler en baştan haritada durur. Kapalı: gizli başlar, cevaplayınca çıkar (Ayarlar &gt; Birikimli öğrenme kuralına göre). <i>Obje modundaki sorularda objeler zaten görünür olmak zorundadır.</i></div>
-      </div>
-      <button class="toggle ${a.objeGorunur === "bastan" ? "acik" : ""}" data-ayar="objeGorunur" role="switch"><span></span></button>
-    </div>
+    ${anahtar("İl isimleri görünsün", "ilIsimleri", a.ilIsimleri)}
+    ${anahtar("İl sınırları görünsün", "ilSinirlari", a.ilSinirlari !== false)}
+    ${anahtar("Hayalet mod", "hayalet", a.hayalet && !hayaletPasif, hayaletPasif)}
+    ${anahtar("Seçim birimi baştan görünsün", "objeGorunur", a.objeGorunur === "bastan")}
 
     <div class="ayar-satir dikey">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Cevap birimi (varsayılan)</div>
-        <div class="ayar-alt">Bu konudaki soruların neye tıklanarak cevaplanacağı. Konunun tamamı için geçerlidir.</div>
-      </div>
-      <div class="secenek-satir" data-secenek="cevapBirimi">
-        <button class="secenek ${a.cevapBirimi === "il" ? "secili" : ""}" data-deger="il">İl</button>
-        <button class="secenek ${a.cevapBirimi === "bolge" ? "secili" : ""}" data-deger="bolge">Bölge</button>
-        <button class="secenek ${a.cevapBirimi === "obje" ? "secili" : ""}" data-deger="obje">Obje</button>
-      </div>
-    </div>
-
-    <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">İl sınırlarını kaldır</div>
-        <div class="ayar-alt">Açıkken çıplak Türkiye haritası görünür — il çizgileri kaybolur, yalnızca ülke dış hattı kalır. Tıklama yine çalışır.</div>
-      </div>
-      <button class="toggle ${a.ilSinirlari === false ? "acik" : ""}" data-ayar="ilSinirlari" role="switch"><span></span></button>
-    </div>
-
-    <div class="ayar-satir ${(a.cevapBirimi || "il") === "il" ? "pasif-ayar" : ""}">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Hayalet mod</div>
-        <div class="ayar-alt">Objeler kimliklerini gizleyerek başlar: emoji yerine ❓, çizgi ve alanlar nötr gri. Doğru bildiğin obje gerçek haline döner; kalıcılığı <b>Ayarlar &gt; Birikimli öğrenme</b>'ye bağlıdır. Yanlış cevapta doğrusu bir an görünür, sonra yeniden ❓ olur.
-        ${(a.cevapBirimi || "il") === "il"
-          ? `<i>Cevap birimi <b>İl</b> olduğu için kapalı — il sorusunda objenin şekli zaten cevabı vermez.</i>`
-          : `<i>Objeler baştan görünmüyorsa devreye girmez: yukarıdaki “Objeler baştan görünsün” anahtarını da aç.</i>`}</div>
-      </div>
-      <button class="toggle ${a.hayalet ? "acik" : ""}" data-ayar="hayalet" role="switch"
-              ${(a.cevapBirimi || "il") === "il" ? "disabled" : ""}><span></span></button>
-    </div>
-
-    <div class="ayar-satir dikey">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Obje adları</div>
-        <div class="ayar-alt">Akarsu/dağ adlarının haritada ne zaman yazılacağı.</div>
-      </div>
+      <div class="ayar-ad">Seçim birimi adları</div>
       <div class="secenek-satir" data-secenek="objeAdlari">
         <button class="secenek ${a.objeAdlari === "gorunsun" ? "secili" : ""}" data-deger="gorunsun">Hep görünsün</button>
         <button class="secenek ${a.objeAdlari === "cevapta" ? "secili" : ""}" data-deger="cevapta">Cevaptan sonra</button>
         <button class="secenek ${a.objeAdlari === "hic" ? "secili" : ""}" data-deger="hic">Hiç</button>
       </div>
-    </div>
+    </div>`;
 
-`;
+  $("#ayar-birim", hedefEl).addEventListener("change", e => {
+    konu.ayar.cevapBirimi = e.target.value;
+    konuAyarUygula(konu);
+    konuAyarIcerik(konu, hedefEl);          // hayalet modun açılabilirliği değişir
+  });
 
   $$(".toggle", hedefEl).forEach(t => {
     t.addEventListener("click", () => {
       const alan = t.dataset.ayar;
       const acik = !t.classList.contains("acik");
       t.classList.toggle("acik", acik);
-      if (alan === "ilIsimleri") konu.ayar.ilIsimleri = acik;
-      else if (alan === "objeGorunur") konu.ayar.objeGorunur = acik ? "bastan" : "cevapta";
-      else if (alan === "ilSinirlari") konu.ayar.ilSinirlari = !acik;   // anahtar "kaldır" demek
-      else if (alan === "hayalet") konu.ayar.hayalet = acik;
+      if (alan === "objeGorunur") konu.ayar.objeGorunur = acik ? "bastan" : "cevapta";
+      else if (alan === "ilSinirlari") konu.ayar.ilSinirlari = acik;
+      else konu.ayar[alan] = acik;
       konuAyarUygula(konu);
     });
   });
@@ -2421,12 +2413,9 @@ function konuAyarIcerik(konu, hedefEl) {
         b.classList.add("secili");
         konu.ayar[satir.dataset.secenek] = b.dataset.deger;
         konuAyarUygula(konu);
-        // cevap birimi hayalet modun açılabilirliğini belirler — paneli tazele
-        if (satir.dataset.secenek === "cevapBirimi") konuAyarIcerik(konu, hedefEl);
       });
     });
   });
-
 }
 
 function konuAyarUygula(konu) {
@@ -2556,19 +2545,10 @@ function konuEkleKaydet() {
   durum.kutuphane.push(konu);
   kutuphaneKaydet();
   durum.editorKonuId = konu.id;
-  durum.seciliObjeId = null;
   $("#modal-konu-ekle").classList.add("gizli");
-  bildir(`"${ad}" eklendi — Harita Düzenle'den obje yerleştir`);
-
-  if ($("#ekran-editor").classList.contains("aktif")) {
-    konuSeciciDoldur($("#editor-konu"));
-    $("#editor-konu").value = konu.id;
-    editorTazele();
-  } else {
-    konuSeciciDoldur($("#soru-duzen-konu"));
-    $("#soru-duzen-konu").value = konu.id;
-    soruTablosuCiz();
-  }
+  bildir(`"${ad}" eklendi — önce ayarlarını seç`);
+  /* Akış: yeni konu → ayarlar (cevap birimi vb.) → Düzenle */
+  konuAyarAc(konu.id);
 }
 
 /* Hazır coğrafya içeriği — Natural Earth verisinden üretilmiş akarsu ve göller */
@@ -2633,174 +2613,6 @@ function konuSil(konu) {
     durum.editorKonuId = durum.kutuphane[0].id;
     if ($("#ekran-ust-konular").classList.contains("aktif")) ustKonuListesiCiz();
     bildir("Konu silindi");
-  });
-}
-
-/* ==========================================================
-   SORU SEKMESİ — objelerin illeri ve soru metinleri
-   ========================================================== */
-function soruTablosuCiz() {
-  const konu = konuBul(durum.editorKonuId);
-  if (!konu) return;
-
-  const tablo = $("#soru-tablo");
-  tablo.innerHTML = "";
-  const objeli = konu.objeler && konu.objeler.length;
-  $("#soru-sayisi").textContent = sorulariUret(konu).length;
-
-  /* ---- objesiz konu: elle yazılmış sorular ---- */
-  if (!objeli) {
-    if (!konu.sorular.length) {
-      tablo.innerHTML = `<p class="bos-uyari kucuk">Bu konuda henüz soru yok. Aşağıdan ekleyebilir ya da <b>Harita</b> sekmesinden obje koyabilirsin.</p>`;
-    }
-    konu.sorular.forEach((kayit, i) => {
-      const satir = document.createElement("div");
-      satir.className = "soru-satir";
-      satir.innerHTML = `
-        <span class="satir-emoji">${i + 1}</span>
-        <div class="satir-alanlar">
-          <input class="kucuk-alan" value="${guvenli(kayit.metin)}" placeholder="Soru metni">
-          <span class="satir-il">${guvenli(kayit.bolge ? kayit.bolge : (kayit.hedef || []).join(", "))}</span>
-        </div>
-        <button class="satir-sil" title="Sil">✕</button>`;
-      $("input", satir).addEventListener("change", e => {
-        kayit.metin = e.target.value; kutuphaneKaydet(); bildir("Kaydedildi");
-      });
-      $(".satir-sil", satir).addEventListener("click", () => {
-        onay(`"${kayit.metin || "Bu soru"}" silinecek.`, { baslik: "Soruyu sil", ikon: "🗑️" }).then(evet => {
-          if (!evet) return;
-          konu.sorular.splice(i, 1); kutuphaneKaydet(); soruTablosuCiz();
-        });
-      });
-      tablo.appendChild(satir);
-    });
-
-    $("#soru-ekle-alani").innerHTML = `
-      <label class="alan-etiket">Yeni soru</label>
-      <input class="kucuk-alan" id="yeni-soru-metin" placeholder="Soru metni">
-      <select class="secici tam" id="yeni-soru-hedef">
-        <optgroup label="Bölge">
-          ${Object.keys(BOLGELER).map(b => `<option value="B:${guvenli(b)}">${guvenli(b)} Bölgesi</option>`).join("")}
-        </optgroup>
-        <optgroup label="İl">
-          ${IL_ADLARI.map(il => `<option value="I:${guvenli(il)}">${guvenli(il)}</option>`).join("")}
-        </optgroup>
-      </select>
-      <button class="ana-btn ince tam" id="btn-soru-ekle">Soruyu ekle</button>`;
-    $("#btn-soru-ekle").addEventListener("click", () => {
-      const metin = $("#yeni-soru-metin").value.trim();
-      const hedef = $("#yeni-soru-hedef").value;
-      if (!metin) { bildir("Soru metni yaz"); return; }
-      if (hedef.startsWith("B:")) konu.sorular.push({ metin, bolge: hedef.slice(2) });
-      else konu.sorular.push({ metin, hedef: [hedef.slice(2)] });
-      kutuphaneKaydet(); soruTablosuCiz(); bildir("Soru eklendi");
-    });
-    return;
-  }
-
-  /* ---- objeli konu: obje listesi, seçiliyi düzenle ---- */
-  $("#soru-ekle-alani").innerHTML = "";
-  konu.objeler.forEach(o => {
-    const secili = o.id === durum.seciliObjeId;
-    const kart = document.createElement("div");
-    kart.className = "soru-obje" + (secili ? " secili" : "");
-    const simge = o.tip === "cizgi" ? "〰️" : o.tip === "alan" ? "⬭" : (o.emoji || "📍");
-    const grup = soruGrubu(o, konu);
-    const soruAdet = grup.reduce((t, x) =>
-      t + (x.sorular || []).filter(y => (y.metin || "").trim()).length, 0);
-    const cer = cerceveBul(o.cerceve);
-
-    kart.innerHTML = `
-      <button class="soru-obje-bas">
-        <span class="satir-emoji">${guvenli(simge)}</span>
-        <b>${guvenli(o.ad || "(adsız)")}${cer ? " " + cer.simge : ""}</b>
-        <span class="sayi-rozet">${soruAdet || 1}</span>
-      </button>`;
-
-    $(".soru-obje-bas", kart).addEventListener("click", () => {
-      durum.seciliObjeId = secili ? null : o.id;
-      soruTablosuCiz();
-    });
-
-    if (secili) {
-      const govde = document.createElement("div");
-      govde.className = "soru-obje-govde";
-      const grupIller = [];
-      grup.forEach(x => x.iller.forEach(il => { if (!grupIller.includes(il)) grupIller.push(il); }));
-      govde.innerHTML = `
-        ${grup.length > 1 ? `<p class="grup-notu">Bu obje, aynı adı taşıyan <b>${grup.length}</b>
-           objeyle tek soruda birleşiyor: <b>${guvenli(grupIller.join(", "))}</b>.
-           Sorunun hepsini bulman gerekir. Ayırmak istersen adını değiştir ya da farklı bir çerçeve ver.</p>` : ""}
-
-        <label class="alan-etiket">İlçe <i>(isteğe bağlı, soru metnine girer)</i></label>
-        <input class="kucuk-alan" id="obje-ilce" value="${guvenli(o.ilce || "")}"
-               placeholder="Örn. Bigadiç — boş bırakılabilir">
-
-        <label class="alan-etiket">İller <span class="sayi-rozet">${o.iller.length}</span></label>
-        <div class="il-rozetleri">
-          ${o.iller.map(il => `<span class="il-rozet">${guvenli(il)}<button data-il-sil="${guvenli(il)}">✕</button></span>`).join("")}
-          ${o.iller.length ? "" : `<span class="bos-il">Henüz il yok</span>`}
-        </div>
-        <div class="ekle-satir dar">
-          <select class="secici tam" id="il-ekle-sec">
-            ${IL_ADLARI.map(il => `<option value="${guvenli(il)}">${guvenli(il)}</option>`).join("")}
-          </select>
-          <button class="ikincil-btn ince" id="btn-il-ekle">Ekle</button>
-        </div>
-        ${(o.tip === "cizgi" || o.tip === "alan")
-          ? `<button class="ikincil-btn ince tam" id="btn-il-yenile">${o.tip === "alan" ? "Kapsadığı" : "Geçtiği"} illeri yeniden bul</button>` : ""}
-
-        <label class="alan-etiket">Sorular</label>
-        <div class="soru-metinleri">
-          ${(o.sorular || []).map((sr, i) => `
-            <div class="soru-metin-satir">
-              <textarea class="kucuk-alan" data-soru="${i}" rows="2"
-                placeholder="Soru metni">${guvenli(sr.metin || "")}</textarea>
-              <button class="satir-sil" data-soru-sil="${i}" title="Sil">✕</button>
-            </div>`).join("")}
-          ${(o.sorular || []).length ? "" :
-            `<p class="bos-uyari kucuk">Soru yazmazsan otomatik üretilir: <b>${guvenli(otomatikSoru(o, konu))}</b></p>`}
-        </div>
-        <button class="ikincil-btn ince tam" id="btn-soru-metin-ekle">＋ Soru ekle</button>`;
-      kart.appendChild(govde);
-
-      $("#obje-ilce", govde).addEventListener("change", e => {
-        o.ilce = e.target.value.trim();
-        kutuphaneKaydet(); soruTablosuCiz(); bildir("Kaydedildi");
-      });
-      $$("[data-il-sil]", govde).forEach(b => b.addEventListener("click", () => {
-        o.iller = o.iller.filter(x => x !== b.dataset.ilSil);
-        kutuphaneKaydet(); soruTablosuCiz();
-      }));
-      $("#btn-il-ekle", govde).addEventListener("click", () => {
-        const il = $("#il-ekle-sec", govde).value;
-        if (o.iller.includes(il)) { bildir(il + " zaten ekli"); return; }
-        o.iller.push(il); kutuphaneKaydet(); soruTablosuCiz();
-      });
-      const yenile = $("#btn-il-yenile", govde);
-      if (yenile) yenile.addEventListener("click", () => {
-        if (!editorHarita) return;
-        o.iller = o.tip === "alan"
-          ? alaninIlleri(editorHarita, o.noktalar)
-          : cizgininIlleri(editorHarita, o.noktalar);
-        kutuphaneKaydet(); soruTablosuCiz();
-        bildir(o.iller.length + " il bulundu");
-      });
-      $$("[data-soru]", govde).forEach(t => t.addEventListener("change", () => {
-        o.sorular[+t.dataset.soru].metin = t.value;
-        kutuphaneKaydet(); bildir("Kaydedildi");
-      }));
-      $$("[data-soru-sil]", govde).forEach(b => b.addEventListener("click", () => {
-        o.sorular.splice(+b.dataset.soruSil, 1);
-        kutuphaneKaydet(); soruTablosuCiz();
-      }));
-      $("#btn-soru-metin-ekle", govde).addEventListener("click", () => {
-        if (!Array.isArray(o.sorular)) o.sorular = [];
-        o.sorular.push({ metin: "" });
-        kutuphaneKaydet(); soruTablosuCiz();
-      });
-    }
-    tablo.appendChild(kart);
   });
 }
 
@@ -2965,7 +2777,6 @@ function bulutVerisiGeldi(anahtar) {
   else if (aktif === "ekran-editor" && typeof editorTazele === "function") {
     konuSeciciDoldur($("#editor-konu"));
     $("#editor-konu").value = durum.editorKonuId;
-    if (typeof emojileriCiz === "function") emojileriCiz();
     editorTazele();
   }
 }
