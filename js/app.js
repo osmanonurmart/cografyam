@@ -400,7 +400,7 @@ function konulariTamamla(k) {
     konu.objeler = (konu.objeler || []).map(o => {
       const obje = Object.assign({
         id: yeniId(), tip: "emoji", emoji: "📍", ad: "", iller: [], soruMetni: "",
-        ilce: "", cerceve: null,
+        ilce: "", cerceve: null, ekGoster: true,
         x: null, y: null, boyut: 2, aci: 0,
         noktalar: null, renk: null, kalinlik: 3,
         desen: "duz", saydamlik: 0.45,
@@ -417,6 +417,7 @@ function konulariTamamla(k) {
       delete obje.soruMetni;
       if (!Array.isArray(obje.iller)) obje.iller = [];
       if (typeof obje.ilce !== "string") obje.ilce = "";
+      if (typeof obje.ekGoster !== "boolean") obje.ekGoster = true;  // ilçe/çerçeve soruda görünsün
       if (!cerceveBul(obje.cerceve)) obje.cerceve = null;   // silinmiş çerçeve objeyi kaybettirmesin
       /* Varsayılan obje boyutu 1'den 2'ye çıktı; eski kayıtlar bir kez büyür.
          İşaret objenin kendisinde durur — buluttan eski bir kopya dönerse o da
@@ -546,10 +547,11 @@ function soruGrupAnahtari(o) {
   return ad ? `${ad} :: ${o.cerceve || ""}` : `adsiz:: ${o.id}`;
 }
 
-/* Soru metnine giren parantez: "(işleniyor · Bigadiç, Kırka)".
-   Çerçeve de ilçe de boşsa hiç parantez çıkmaz — taşkömürü gibi
-   yalnızca yeri sorulan objeler sade kalır. */
+/* Sorunun sonuna eklenen parantez: "(işleniyor · Bigadiç, Kırka)".
+   Kartın "ek" anahtarı kapalıysa ya da çerçeve de ilçe de boşsa hiç
+   parantez çıkmaz — taşkömürü gibi yalnızca yeri sorulanlar sade kalır. */
 function soruEki(grup) {
+  if (grup[0].ekGoster === false) return "";
   const parcalar = [];
   const cer = cerceveBul(grup[0].cerceve);
   if (cer) parcalar.push(cer.ad.toLocaleLowerCase("tr"));
@@ -562,21 +564,15 @@ function soruEki(grup) {
   return parcalar.length ? ` (${parcalar.join(" · ")})` : "";
 }
 
-/* Kendi yazdığın soruda ilçeyi zaten anmışsan parantez ikinci kez eklenmez. */
-function ekiUygula(metin, ek) {
-  if (!ek) return metin;
-  const alt = metin.toLocaleLowerCase("tr");
-  const kalan = ek.slice(2, -1).split(" · ").filter(p => !alt.includes(p.toLocaleLowerCase("tr")));
-  return kalan.length ? `${metin} (${kalan.join(" · ")})` : metin;
-}
-
-/* Soru yazılmamışsa üretilen metin. Ek, adın hemen ardına girer:
-   "Bor yatakları (Bigadiç, Kırka) hangi illerimizdedir?" */
+/* Soru yazılmamışsa üretilen metin. Ek en sona girer:
+   "Bor yatakları hangi illerimizdedir? (Bigadiç, Kırka)"
+   Kendi yazdığın soruya ek eklenmez — orada metnin tamamı senin. */
 function otomatikSoruMetni(grup, birim, ek, ilAdedi) {
-  const ad = (grup[0].ad || "…") + (ek || "");
-  if (birimObjeMi(birim)) return `Hangisi ${ad}?`;
-  if (birim === "bolge") return `${ad} hangi bölgemizdedir?`;
-  return ilAdedi > 1 ? `${ad} hangi illerimizdedir?` : `${ad} hangi ilimizdedir?`;
+  const ad = grup[0].ad || "…";
+  const govde = birimObjeMi(birim) ? `Hangisi ${ad}?`
+    : birim === "bolge" ? `${ad} hangi bölgemizdedir?`
+    : (ilAdedi > 1 ? `${ad} hangi illerimizdedir?` : `${ad} hangi ilimizdedir?`);
+  return govde + (ek || "");
 }
 
 /* Konudan soru listesi üretir.
@@ -608,7 +604,7 @@ function sorulariUret(konu) {
         if (m && !yazilan.includes(m)) yazilan.push(m);
       }));
       const metinler = yazilan.length
-        ? yazilan.map(m => ekiUygula(m, ek))
+        ? yazilan.slice()
         : [otomatikSoruMetni(grup, birim, ek, iller.length)];
 
       metinler.forEach(metin => liste.push({

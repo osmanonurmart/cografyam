@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=50">
+<link rel="stylesheet" href="css/style.css?s=51">
 </head>
 <body>
 
@@ -46,10 +46,6 @@
       </a>
     </div>
     <div class="ust-sag">
-      <button class="profil-rozet" id="btn-bulut" title="Bulut durumu">
-        <span class="rozet-avatar" id="bulut-simge">☁</span>
-        <span id="bulut-ad">Bulut</span>
-      </button>
       <button class="ikon-btn kucuk" id="btn-ayarlar" title="Ayarlar">⚙</button>
     </div>
   </header>
@@ -140,26 +136,17 @@
     <h2 class="bolum-baslik">Çalışma</h2>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Birikimli öğrenme</div>
-        <div class="ayar-alt">Açıkken cevapladığın seçim birimleri haritada kalır ve üst üste birikir. Kapalıyken sonraki soruya geçince kaybolur.</div>
-      </div>
+      <div class="ayar-ad">Birikimli öğrenme</div>
       <button class="toggle" id="toggle-birikimli" role="switch"><span></span></button>
     </div>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Soruları karıştır</div>
-        <div class="ayar-alt">Açıkken konuya her baştan girişinde sorular farklı sırayla gelir. Kapalıyken seçim birimlerinin eklenme sırasını izler. Yarıda bıraktığın konu, döndüğünde aynı sırayla devam eder.</div>
-      </div>
+      <div class="ayar-ad">Soruları karıştır</div>
       <button class="toggle" id="toggle-karistir" role="switch"><span></span></button>
     </div>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Yanlış cevapta bekleme süresi</div>
-        <div class="ayar-alt">Yanlış cevapladığında doğrusunun haritada kaldığı süre.</div>
-      </div>
+      <div class="ayar-ad">Yanlış cevapta bekleme süresi</div>
       <div class="ayar-eylem">
         <select class="secici" id="sure-sec"></select>
       </div>
@@ -168,28 +155,26 @@
     <h2 class="bolum-baslik">Geri bildirim</h2>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Ses</div>
-        <div class="ayar-alt">Doğru/yanlış cevapta, düğmelere basınca, süre dolmadan önce ve konu bitince kısa sesler çalar.</div>
-      </div>
+      <div class="ayar-ad">Ses</div>
       <button class="toggle" id="toggle-ses" role="switch"><span></span></button>
     </div>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Titreşim</div>
-        <div class="ayar-alt">Doğru ve yanlış cevapta kısa titreşim. <b>iPhone'da çalışmaz</b> — Safari tarayıcı titreşimini desteklemiyor; Android ve bilgisayarda çalışır.</div>
-      </div>
+      <div class="ayar-ad">Titreşim</div>
       <button class="toggle" id="toggle-titresim" role="switch"><span></span></button>
+    </div>
+
+    <h2 class="bolum-baslik">Bulut</h2>
+
+    <div class="ayar-satir">
+      <div class="ayar-ad"><span id="bulut-simge">☁</span> <span id="bulut-ad">Bulut</span></div>
+      <button class="ikincil-btn ince dar" id="btn-bulut">Durum</button>
     </div>
 
     <h2 class="bolum-baslik">İlerleme</h2>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">İlerlememi sil</div>
-        <div class="ayar-alt">Seçtiğin konuda kaldığın yer ve doğru/yanlış kayıtların silinir.</div>
-      </div>
+      <div class="ayar-ad">İlerlememi sil</div>
       <div class="ayar-eylem">
         <select class="secici" id="ilerleme-konu-sec"></select>
         <button class="tehlike-btn" id="btn-konu-ilerleme-sil">Sil</button>
@@ -197,10 +182,7 @@
     </div>
 
     <div class="ayar-satir">
-      <div class="ayar-yazi">
-        <div class="ayar-ad">Bu profilin ilerlemesini sil</div>
-        <div class="ayar-alt">Tüm konulardaki kayıtlar ve istatistikler silinir. Konuların ve seçim birimlerin durur.</div>
-      </div>
+      <div class="ayar-ad">Bu profilin ilerlemesini sil</div>
       <button class="tehlike-btn" id="btn-ilerleme-sil">Temizle</button>
     </div>
   </main>
@@ -253,8 +235,7 @@
     <div class="editor-harita" id="editor-harita">
       <div class="harita-araclar" id="harita-araclar">
         <button class="harita-arac-btn" id="btn-onizleme" title="Görünümü değiştir">⇄ <b>Düzenle</b></button>
-        <button class="harita-arac-btn" id="btn-zoom" title="Tekerlekle yakınlaştır, sürükleyerek gez">🔍 <b>Zoom pasif</b></button>
-        <button class="harita-arac-btn gizli" id="btn-zoom-sifirla" title="Haritayı tam görünüme döndür">⤢</button>
+        <button class="harita-arac-btn gizli" id="btn-zoom-sifirla" title="Haritayı tam görünüme döndür (tekerlek: yakınlaştır · orta tuş ya da Space: gezdir)">⤢</button>
       </div>
     </div>
 
@@ -357,17 +338,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=50"></script>
-<script src="js/il-merkez.js?s=50"></script>
-<script src="js/komsular.js?s=50"></script>
-<script src="js/hazir-icerik.js?s=50"></script>
+<script src="js/harita-turkiye.js?s=51"></script>
+<script src="js/il-merkez.js?s=51"></script>
+<script src="js/komsular.js?s=51"></script>
+<script src="js/hazir-icerik.js?s=51"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=50"></script>
-<script src="js/data.js?s=50"></script>
-<script src="js/app.js?s=50"></script>
-<script src="js/bulut.js?s=50"></script>
-<script src="js/editor.js?s=50"></script>
-<script src="js/konu-duzen.js?s=50"></script>
+<script src="js/firebase-config.js?s=51"></script>
+<script src="js/data.js?s=51"></script>
+<script src="js/app.js?s=51"></script>
+<script src="js/bulut.js?s=51"></script>
+<script src="js/editor.js?s=51"></script>
+<script src="js/konu-duzen.js?s=51"></script>
 </body>
 </html>

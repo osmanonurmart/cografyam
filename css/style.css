@@ -472,6 +472,7 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 .editor-harita.ciz-modu svg{cursor:crosshair}
 .ana-btn.ince,.ikincil-btn.ince{padding:7px 14px;font-size:13px}
 .ikincil-btn.tam,.tehlike-btn.tam,.ana-btn.tam{width:100%;flex:none}
+.ikincil-btn.ince.dar{flex:none}
 
 /* konu seçici + butonu */
 .secici-grup{display:flex;align-items:center;gap:6px;flex:none}
@@ -1000,10 +1001,11 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 /* zoom açıkken harita sürüklenebilir, objeler tıklanamaz */
 /* gezinirken il adları metin gibi seçilmesin */
 .editor-harita{user-select:none;-webkit-user-select:none}
-.editor-harita.zoom-modu{cursor:grab}
-.editor-harita.zoom-modu:active{cursor:grabbing}
-.editor-harita.zoom-modu .katman-obje,
-.editor-harita.zoom-modu .katman-tutamak{pointer-events:none !important}
+/* Space basılıyken sol tuş haritayı gezdirir — imleç bunu haber versin */
+.editor-harita.gezinir{cursor:grab}
+.editor-harita.gezinir:active{cursor:grabbing}
+/* çoklu dokunuş için tarayıcının kendi kaydırması kapalı olmalı */
+.editor-harita-ic{touch-action:none}
 .liste-arac{display:flex;gap:5px;align-items:center}
 .mini-ekle.secili{background:var(--mavi);border-color:var(--mavi);color:#fff}
 .secim-kutu{font-size:14px;color:var(--sonuk);flex:none}
@@ -1181,3 +1183,17 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .metin-btn.tehlike{color:#fca5a5}
 
 .kart-ekle-satir{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+
+/* kart simgesi düzenlenebilir: köşesinde kalem */
+.kart-simge.duzenlenir{
+  position:relative;flex:none;width:30px;height:30px;border-radius:9px;
+  background:var(--bg2);border:1px solid var(--line);display:grid;place-items:center;
+  font-size:16px;line-height:1;
+}
+.kart-simge.duzenlenir:hover{border-color:var(--mavi)}
+.simge-kalem{
+  position:absolute;right:-4px;bottom:-4px;font-size:9px;line-height:1;
+  background:var(--mavi);color:#fff;border-radius:50%;width:14px;height:14px;
+  display:grid;place-items:center;
+}
+.kart-bas.tiklanir{cursor:pointer}

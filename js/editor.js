@@ -196,14 +196,22 @@ function kartiCiz(k, acikMi) {
   kutu.className = "kart" + (acikMi ? " acik" : "") + (k.sorulur ? "" : " sorulmaz");
   const o = kartOzeti(k);
 
-  const bas = document.createElement("button");
-  bas.className = "kart-bas";
+  /* Başlık düğme DEĞİL: içinde simge düğmesi var, iç içe düğme geçersiz. */
+  const bas = document.createElement("div");
+  bas.className = "kart-bas tiklanir";
+  const sekilli = k.tip === "obje" && (k.objeler[0].tip === "cizgi" || k.objeler[0].tip === "alan");
   bas.innerHTML = `
-    <span class="kart-simge">${guvenli(o.simge)}</span>
+    ${k.tip === "obje" && !sekilli
+      ? `<button class="kart-simge duzenlenir" data-simge-ac title="Simgeyi değiştir">
+           ${guvenli(o.simge)}<span class="simge-kalem">✎</span></button>`
+      : `<span class="kart-simge">${guvenli(o.simge)}</span>`}
     <b class="kart-ad">${guvenli(o.ad)}</b>
     ${o.sayi ? `<span class="sayi-rozet">${o.sayi}</span>` : ""}
     ${k.sorulur ? "" : `<span class="kart-not" title="Cevap birimi bu türü sormuyor">sorulmuyor</span>`}`;
-  bas.addEventListener("click", () => kartAc(acikMi ? null : k));
+  bas.addEventListener("click", ev => {
+    if (ev.target.closest("[data-simge-ac]")) { ogeSimgeAc(k); return; }
+    kartAc(acikMi ? null : k);
+  });
   kutu.appendChild(bas);
 
   if (acikMi) kutu.appendChild(k.tip === "soru" ? soruKartiGovde(k) : objeKartiGovde(k));
@@ -216,7 +224,9 @@ function bekleyenKartiCiz() {
   kutu.className = "kart acik bekleyen";
   kutu.innerHTML = `
     <div class="kart-bas">
-      <span class="kart-simge">${guvenli(bekleyen.emoji || "📍")}</span>
+      <button class="kart-simge duzenlenir" id="bekleyen-simge" title="Simgeyi seç">
+        ${guvenli(bekleyen.gorselId ? "🖼️" : (bekleyen.emoji || "📍"))}<span class="simge-kalem">✎</span>
+      </button>
       <input class="kart-ad-alan" id="bekleyen-ad" value="${guvenli(bekleyen.ad)}"
              placeholder="Ad (örn. Bor yatakları)" autocomplete="off">
       <button class="satir-sil" id="bekleyen-iptal" title="Vazgeç">✕</button>
@@ -228,6 +238,7 @@ function bekleyenKartiCiz() {
 
   const alan = $("#bekleyen-ad", kutu);
   alan.addEventListener("input", () => { bekleyen.ad = alan.value; });
+  $("#bekleyen-simge", kutu).addEventListener("click", () => ogeSimgeAc("bekleyen"));
   $("#bekleyen-iptal", kutu).addEventListener("click", () => {
     bekleyen = null; ekleModu = null; cizimiIptal(); editorTazele();
   });
@@ -288,6 +299,10 @@ function objeKartiGovde(k) {
 
     <details class="kart-bolum">
       <summary>Soru metni</summary>
+      <div class="ayar-satir minik">
+        <div class="ayar-ad">İlçe ve çerçeve soruda görünsün</div>
+        <button class="toggle ${ilk.ekGoster === false ? "" : "acik"}" data-ek role="switch"><span></span></button>
+      </div>
       <p class="ekle-ipucu">Yazmazsan otomatik: <b>${guvenli(otomatikSoru(ilk, konu))}</b></p>
       ${yazilanlar.map((metin, i) => `
         <div class="soru-metin-satir">
@@ -418,6 +433,11 @@ function objeKartiOlaylari(govde, k) {
     y.o.sorular.splice(y.i, 1);
     kutuphaneKaydet(); editorTazele();
   }));
+  $("[data-ek]", govde).addEventListener("click", e => {
+    const acik = !e.currentTarget.classList.contains("acik");
+    hepsi("ekGoster", acik);
+    editorTazele();
+  });
   $("[data-soru-ekle]", govde).addEventListener("click", () => {
     if (!Array.isArray(ilk.sorular)) ilk.sorular = [];
     ilk.sorular.push({ metin: "" });
@@ -680,22 +700,19 @@ function ogeSimgesi(o) {
 /* ----------------------------------------------------------
    HARİTA GÖRÜNÜMÜ
 ---------------------------------------------------------- */
-function zoomDurumuCiz() {
-  const acik = !!durum.editorZoom;
-  const b = $("#btn-zoom");
-  b.innerHTML = `🔍 <b>Zoom ${acik ? "aktif" : "pasif"}</b>`;
-  b.classList.toggle("acik", acik);
-  $("#editor-harita").classList.toggle("zoom-modu", acik);
-  $("#btn-zoom-sifirla").classList.toggle("gizli", !editorHarita || editorHarita.tamGorunumMu());
-}
+/* ----------------------------------------------------------
+   HARİTA GEZİNMESİ — Photoshop mantığı
+   Ayrı bir "zoom modu" yok: tekerlek her zaman yakınlaştırır, orta tuş
+   (ya da Space basılıyken sol tuş) gezdirir, sol tuş çizmeye devam eder.
+   Dokunmatikte tek parmak çizer, iki parmak hem gezdirir hem yakınlaştırır.
+   Eskiden zoom açıkken çizim tamamen kilitliydi; yakınlaşıp hassas
+   çizmek imkânsızdı.
+---------------------------------------------------------- */
+let bosluk = false;      // Space basılı mı (gezinme tuşu)
 
-function zoomDegistir() {
-  durum.editorZoom = !durum.editorZoom;
-  if (durum.editorZoom && cizim) cizimiIptal();
-  zoomDurumuCiz();
-  bildir(durum.editorZoom
-    ? "Zoom açık — tekerlekle yakınlaştır, sürükleyerek gez"
-    : "Zoom kapalı — düzenlemeye devam");
+function zoomDurumuCiz() {
+  $("#btn-zoom-sifirla").classList.toggle("gizli", !editorHarita || editorHarita.tamGorunumMu());
+  $("#editor-harita").classList.toggle("gezinir", bosluk);
 }
 
 function onizlemeDegistir() {
@@ -712,38 +729,105 @@ function onizlemeDurumuCiz() {
   b.title = calisMi ? "Tıkla: Düzenle görünümüne dön" : "Tıkla: Çalış görünümünü gör";
 }
 
+/* Gezinme sürüyor mu? Sürüyorsa harita olayları çizim yapmaz. */
+function gezinmeVarMi() { return !!(gezinme || ikiParmak); }
+
+let gezinme = null;
+let ikiParmak = null;
+const dokunanlar = new Map();
+
 function zoomOlaylari() {
   const kap = $(".editor-harita-ic");
+  const uzaklik = (a, b) => Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const orta = (a, b) => ({ clientX: (a.clientX + b.clientX) / 2, clientY: (a.clientY + b.clientY) / 2 });
 
   kap.addEventListener("wheel", ev => {
-    if (!durum.editorZoom) return;
     ev.preventDefault();
     editorHarita.yakinlastir(ev.deltaY < 0 ? 1.18 : 1 / 1.18, editorHarita.svgNokta(ev));
     zoomDurumuCiz();
   }, { passive: false });
 
-  let gezinme = null;
+  /* Orta tuş tarayıcının otomatik kaydırmasını açar; kapatılmalı. */
+  kap.addEventListener("auxclick", ev => { if (ev.button === 1) ev.preventDefault(); });
+
   kap.addEventListener("pointerdown", ev => {
-    if (!durum.editorZoom) return;
+    if (ev.pointerType === "touch") {
+      dokunanlar.set(ev.pointerId, ev);
+      if (dokunanlar.size === 2) {
+        const [a, b] = [...dokunanlar.values()];
+        ikiParmak = { uzaklik: uzaklik(a, b) };
+        cizimSurukleyiIptal();
+      }
+      return;
+    }
+    const gezdir = ev.button === 1 || (ev.button === 0 && bosluk);
+    if (!gezdir) return;
     ev.preventDefault();
-    gezinme = { bas: editorHarita.svgNokta(ev), id: ev.pointerId };
+    gezinme = { bas: editorHarita.svgNokta(ev) };
     kap.setPointerCapture(ev.pointerId);
   });
+
   kap.addEventListener("pointermove", ev => {
+    if (dokunanlar.has(ev.pointerId)) dokunanlar.set(ev.pointerId, ev);
+
+    if (ikiParmak && dokunanlar.size === 2) {
+      const [a, b] = [...dokunanlar.values()];
+      const yeni = uzaklik(a, b);
+      if (ikiParmak.uzaklik > 0 && Math.abs(yeni - ikiParmak.uzaklik) > 1) {
+        editorHarita.yakinlastir(yeni / ikiParmak.uzaklik, editorHarita.svgNokta(orta(a, b)));
+        ikiParmak.uzaklik = yeni;
+      }
+      if (ikiParmak.orta) {
+        const n = editorHarita.svgNokta(orta(a, b));
+        editorHarita.kaydir(n.x - ikiParmak.orta.x, n.y - ikiParmak.orta.y);
+      }
+      ikiParmak.orta = editorHarita.svgNokta(orta(a, b));
+      return;
+    }
     if (!gezinme) return;
     const n = editorHarita.svgNokta(ev);
     editorHarita.kaydir(n.x - gezinme.bas.x, n.y - gezinme.bas.y);
   });
-  const bitir = () => { gezinme = null; zoomDurumuCiz(); };
+
+  const bitir = ev => {
+    dokunanlar.delete(ev.pointerId);
+    if (dokunanlar.size < 2) ikiParmak = null;
+    gezinme = null;
+    zoomDurumuCiz();
+  };
   kap.addEventListener("pointerup", bitir);
   kap.addEventListener("pointercancel", bitir);
+  window.addEventListener("pointerup", bitir);
+
+  /* Space: basılıyken sol tuş gezdirir. Yazı alanındayken devreye girmez. */
+  document.addEventListener("keydown", ev => {
+    if (ev.code !== "Space" || bosluk) return;
+    if (!$("#ekran-editor").classList.contains("aktif")) return;
+    if (ev.target.tagName === "INPUT" || ev.target.tagName === "TEXTAREA") return;
+    ev.preventDefault();
+    bosluk = true;
+    zoomDurumuCiz();
+  });
+  document.addEventListener("keyup", ev => {
+    if (ev.code !== "Space") return;
+    bosluk = false;
+    gezinme = null;
+    zoomDurumuCiz();
+  });
+}
+
+/* İki parmak gelince yarım kalan sürüklemeyi geri al — parmaklardan biri
+   objeyi kaydırmışsa harita gezerken obje de sürüklenmesin. */
+function cizimSurukleyiIptal() {
+  surukleme = null;
 }
 
 function editorHaritaOlaylari() {
   const svg = editorHarita.svg;
 
   svg.addEventListener("pointerdown", ev => {
-    if (durum.editorZoom) return;
+    if (ev.button === 1 || bosluk || gezinmeVarMi()) return;   // gezinme tuşu çizmez
+    if (ev.pointerType === "touch" && dokunanlar.size > 1) return;
     const n = editorHarita.svgNokta(ev);
 
     if (ekleModu === "cizgi" || ekleModu === "alan") { cizimNoktaEkle(n); return; }
@@ -787,7 +871,7 @@ function editorHaritaOlaylari() {
   });
 
   svg.addEventListener("pointermove", ev => {
-    if (!surukleme) return;
+    if (!surukleme || gezinmeVarMi()) return;
     const o = surukleme.obje;
     const n = editorHarita.svgNokta(ev);
     const dx = n.x - surukleme.bas.x, dy = n.y - surukleme.bas.y;
@@ -978,7 +1062,6 @@ function editorOlaylari() {
   $("#btn-konu-yonet").addEventListener("click", () => konuAyarAc(durum.editorKonuId));
 
   $("#btn-onizleme").addEventListener("click", onizlemeDegistir);
-  $("#btn-zoom").addEventListener("click", zoomDegistir);
   $("#btn-zoom-sifirla").addEventListener("click", () => {
     editorHarita.gorunumSifirla();
     zoomDurumuCiz();
