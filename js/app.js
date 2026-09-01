@@ -585,6 +585,7 @@ function otomatikSoruMetni(grup, birim, ek, ilAdedi) {
 function sorulariUret(konu) {
   const birim = konu.ayar.cevapBirimi || "il";
 
+  const liste = [];
   const uygun = birimeUyanlar(konu.objeler || [], birim);
   if (uygun.length) {
     const gruplar = new Map();
@@ -594,7 +595,6 @@ function sorulariUret(konu) {
       gruplar.get(anahtar).push(o);
     });
 
-    const liste = [];
     gruplar.forEach(grup => {
       const ek = soruEki(grup);
       const iller = [];
@@ -620,18 +620,24 @@ function sorulariUret(konu) {
         objeIdler: idler.slice()
       }));
     });
-    return liste;
   }
 
-  // objesiz konular (elle yazılmış sorular)
+  /* Elle yazılmış sorular haritadaki seçim birimlerine eklenir; ikisi bir
+     arada olabilir. Eskiden obje varsa bunlar yok sayılıyordu — düzenleme
+     ekranında görünüp sorulmadıkları için kaybolmuş gibi duruyorlardı.
+     Cevap birimi bir seçim birimiyse bu sorular ile cevaplanır: yazılı
+     sorunun tıklanacak bir objesi yoktur. */
   const varsayilan = birimObjeMi(birim) ? "il" : birim;
-  return (konu.sorular || []).map(s => {
+  (konu.sorular || []).forEach(s => {
     if (s.bolge) {
-      return { metin: s.metin, birim: "bolge", bolge: s.bolge,
-               hedefIller: (BOLGELER[s.bolge] || []).slice(), objeIdler: [] };
+      liste.push({ metin: s.metin, birim: "bolge", bolge: s.bolge,
+                   hedefIller: (BOLGELER[s.bolge] || []).slice(), objeIdler: [] });
+    } else {
+      liste.push({ metin: s.metin, birim: varsayilan,
+                   hedefIller: (s.hedef || []).slice(), objeIdler: [] });
     }
-    return { metin: s.metin, birim: varsayilan, hedefIller: (s.hedef || []).slice(), objeIdler: [] };
   });
+  return liste;
 }
 
 /* ----------------------------------------------------------
