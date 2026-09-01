@@ -9,6 +9,30 @@ let secilenOge = null;
 let surukleme = null;
 let cizim = null;                     // { noktalar:[], onizleme:<path> }
 
+/* Palet çerçevesi: açıkken haritaya konan her yeni obje bu çerçeveyle gelir.
+   Objenin kendi çerçevesi sonradan panelden de değiştirilebilir. */
+let cerceveAcik = false;
+let secilenCerceve = CERCEVELER.length ? CERCEVELER[0].id : null;
+
+function cerceveAcikMi() {
+  return cerceveAcik && !!cerceveBul(secilenCerceve);
+}
+
+/* Toggle ve çerçeve şeridi — kapalıyken şerit görünmez, karışıklık olmasın. */
+function cerceveDurumuCiz() {
+  $("#cerceve-toggle").classList.toggle("acik", cerceveAcik);
+  const seri = $("#cerceve-palet");
+  seri.classList.toggle("gizli", !cerceveAcik);
+  seri.innerHTML = CERCEVELER.map(c =>
+    `<button class="cerceve-ogesi ${secilenCerceve === c.id ? "secili" : ""}" data-cerceve="${c.id}">
+       ${c.simge} ${c.ad}</button>`).join("");
+  $$(".cerceve-ogesi", seri).forEach(b => b.addEventListener("click", () => {
+    secilenCerceve = b.dataset.cerceve;
+    Depo.yaz("editorCerceve", { acik: cerceveAcik, id: secilenCerceve });
+    cerceveDurumuCiz();
+  }));
+}
+
 const CIZGI_RENKLERI = ["#38bdf8", "#22c55e", "#f59e0b", "#ef4444", "#a78bfa", "#e2e8f0"];
 
 const ARAC_IPUCU = {
@@ -41,6 +65,12 @@ function editorAc() {
     editorHaritaOlaylari();
     zoomOlaylari();
   }
+  const kayitliCerceve = Depo.oku("editorCerceve", null);
+  if (kayitliCerceve) {
+    cerceveAcik = !!kayitliCerceve.acik;
+    if (cerceveBul(kayitliCerceve.id)) secilenCerceve = kayitliCerceve.id;
+  }
+  cerceveDurumuCiz();
   onizlemeDurumuCiz();
   zoomDurumuCiz();
   emojileriCiz();
@@ -332,6 +362,7 @@ function objePaneliCiz() {
   panel.innerHTML = `
     <label class="alan-etiket">Seçili ${tipAd}</label>
     <input type="text" id="obje-ad" class="kucuk-alan" placeholder="Ad (örn. Kızılırmak)" value="${guvenli(o.ad)}">
+    <input type="text" id="obje-ilce-hizli" class="kucuk-alan" placeholder="İlçe (isteğe bağlı)" value="${guvenli(o.ilce || "")}">
 
     ${sekilli ? `
       <div class="kaydirici">
@@ -351,8 +382,12 @@ function objePaneliCiz() {
       <div class="secim-satir" id="cizgi-renk"></div>
     ` : `
       <div class="kaydirici">
-        <label class="alan-etiket">Boyut <b id="boyut-deger">${Number(o.boyut || 1).toFixed(1)}</b></label>
-        <input type="range" id="obje-boyut" min="0.4" max="3" step="0.1" value="${o.boyut || 1}">
+        <label class="alan-etiket">Boyut <b id="boyut-deger">${Number(o.boyut || 2).toFixed(1)}</b></label>
+        <div class="olcu-satir">
+          <button class="olcu-btn" id="btn-boyut-az" title="Küçült">−</button>
+          <input type="range" id="obje-boyut" min="0.4" max="4" step="0.1" value="${o.boyut || 2}">
+          <button class="olcu-btn" id="btn-boyut-cok" title="Büyüt">+</button>
+        </div>
       </div>
       <div class="kaydirici">
         <label class="alan-etiket">Yön / döndürme <b id="aci-deger">${o.aci || 0}°</b></label>
@@ -374,12 +409,26 @@ function objePaneliCiz() {
     </div>
     <button class="ikincil-btn ince tam" id="btn-balon-ekle">＋ Baloncuk ekle</button>
 
+    ${sekilli ? "" : `
+      <label class="alan-etiket">Çerçeve</label>
+      <div class="cerceve-secim" id="obje-cerceve">
+        <button class="cerceve-ogesi ${o.cerceve ? "" : "secili"} " data-cerceve="">Yok</button>
+        ${CERCEVELER.map(c => `<button class="cerceve-ogesi ${o.cerceve === c.id ? "secili" : ""}"
+            data-cerceve="${c.id}">${c.simge} ${guvenli(c.ad)}</button>`).join("")}
+      </div>`}
+
     <div class="panel-btnler dikey">
       <button class="ana-btn ince tam" id="btn-obje-kaydet">Kaydet</button>
       <button class="tehlike-btn tam" id="btn-obje-sil">${cizgiMi ? "Çizgiyi" : alanMi ? "Alanı" : "Objeyi"} sil</button>
     </div>`;
 
   $("#obje-ad").addEventListener("input", e => objeGuncelle("ad", e.target.value, true));
+  $("#obje-ilce-hizli").addEventListener("input", e => objeGuncelle("ilce", e.target.value.trim(), true));
+
+  const cerKap = $("#obje-cerceve", panel);
+  if (cerKap) $$(".cerceve-ogesi", cerKap).forEach(b => b.addEventListener("click", () => {
+    objeGuncelle("cerceve", b.dataset.cerceve || null);
+  }));
 
   $$("[data-balon-baslik]", panel).forEach(inp => inp.addEventListener("change", () => {
     o.baloncuklar[+inp.dataset.balonBaslik].baslik = inp.value;
@@ -397,6 +446,7 @@ function objePaneliCiz() {
 
   $("#btn-obje-kaydet").addEventListener("click", () => {
     o.ad = $("#obje-ad").value;
+    o.ilce = $("#obje-ilce-hizli").value.trim();
     kutuphaneKaydet(); editorTazele(); bildir("Kaydedildi");
   });
   $("#btn-obje-sil").addEventListener("click", () => {
@@ -441,15 +491,40 @@ function objePaneliCiz() {
       rk.appendChild(b);
     });
   } else {
-    $("#obje-boyut").addEventListener("input", e => {
-      $("#boyut-deger").textContent = Number(e.target.value).toFixed(1);
-      objeGuncelle("boyut", parseFloat(e.target.value));
+    /* Sürüklerken yalnızca objenin SVG grubu ölçeklenir: harita yeniden
+       çizilmez, diske yazılmaz. Parmak kalkınca gerçek boyut işlenir. */
+    const kaydirici = $("#obje-boyut");
+    kaydirici.addEventListener("input", e => {
+      const yeni = parseFloat(e.target.value);
+      $("#boyut-deger").textContent = yeni.toFixed(1);
+      boyutOnizle(o, yeni);
     });
+    kaydirici.addEventListener("change", e => boyutUygula(o, parseFloat(e.target.value)));
+    $("#btn-boyut-az").addEventListener("click", () => boyutUygula(o, (o.boyut || 2) - 0.1));
+    $("#btn-boyut-cok").addEventListener("click", () => boyutUygula(o, (o.boyut || 2) + 0.1));
     $("#obje-aci").addEventListener("input", e => {
       $("#aci-deger").textContent = e.target.value + "°";
       objeGuncelle("aci", parseInt(e.target.value, 10));
     });
   }
+}
+
+/* Sürükleme sırasında objeyi kendi merkezi etrafında ölçekler.
+   Gerçek boyut değişmez — bırakınca boyutUygula işler. */
+function boyutOnizle(o, yeni) {
+  const g = editorHarita && editorHarita.objeKat.querySelector(`[data-obje="${o.id}"]`);
+  if (!g) return;
+  const k = objeKonum(editorKonu().objeler, o);
+  const oran = yeni / (o.boyut || 2);
+  g.setAttribute("transform",
+    `translate(${k.x.toFixed(1)} ${k.y.toFixed(1)}) scale(${oran.toFixed(3)}) translate(${(-k.x).toFixed(1)} ${(-k.y).toFixed(1)})`);
+}
+
+function boyutUygula(o, yeni) {
+  const b = Math.round(Math.min(4, Math.max(0.4, yeni)) * 10) / 10;
+  o.boyut = b;
+  kutuphaneKaydet();
+  editorTazele();
 }
 
 /* sadeceListe: yazarken haritayı yeniden çizip odağı kaçırmamak için */
@@ -723,7 +798,8 @@ function objeEkle(plaka, x, y) {
     emoji: gorselMi ? "" : emoji,
     gorselId: gorselMi ? secilenOge.id : null,
     ad: gorselMi ? secilenOge.ad : "", iller: [PLAKA_AD[plaka]],
-    x, y, boyut: 1, aci: 0, noktalar: null, renk: null, kalinlik: 3, sorular: []
+    ilce: "", cerceve: cerceveAcikMi() ? secilenCerceve : null,
+    x, y, boyut: 2, aci: 0, noktalar: null, renk: null, kalinlik: 3, sorular: []
   };
   konu.objeler.push(obje);
   durum.seciliObjeId = obje.id;
@@ -735,6 +811,15 @@ function objeEkle(plaka, x, y) {
 
 /* ---------------- olaylar ---------------- */
 function editorOlaylari() {
+  $("#cerceve-toggle").addEventListener("click", () => {
+    cerceveAcik = !cerceveAcik;
+    Depo.yaz("editorCerceve", { acik: cerceveAcik, id: secilenCerceve });
+    cerceveDurumuCiz();
+    bildir(cerceveAcik
+      ? `Yeni objeler ${cerceveBul(secilenCerceve).ad.toLocaleLowerCase("tr")} çerçevesiyle eklenecek`
+      : "Çerçeve kapatıldı");
+  });
+
   $("#editor-konu").addEventListener("change", e => {
     if (e.target.value === "__yeni__") { e.target.value = durum.editorKonuId; konuEkleModalAc(); return; }
     if (e.target.value === "__sirala__") { e.target.value = durum.editorKonuId; ustKonularAc(); return; }

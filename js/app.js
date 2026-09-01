@@ -335,6 +335,27 @@ function bolgeBul(ilAdi) {
 }
 
 /* ----------------------------------------------------------
+   ÇERÇEVELER
+   Objenin etrafına çizilen kap; emoji çerçevenin kapısında durur.
+   Aynı adlı objeler tek soruda birleşirken çerçeve ayırıcıdır:
+   Konya'da çıkarılan boksit ile işlenen boksit ayrı iki soru olur.
+   Yeni çerçeve eklemek = bu listeye bir kayıt + cerceveCiz'e bir dal.
+---------------------------------------------------------- */
+/* Çerçeve ölçüleri: kap emojinin CERCEVE_OLCEK katı yarıçapında çizilir,
+   emoji CERCEVE_EMOJI oranında küçülür ve kapı ortasına (CERCEVE_KAPI_Y) iner. */
+const CERCEVE_OLCEK = 0.66;
+const CERCEVE_EMOJI = 0.46;
+const CERCEVE_KAPI_Y = 0.48;
+
+const CERCEVELER = [
+  { id: "fabrika", ad: "İşleniyor", simge: "🏭" }
+];
+
+function cerceveBul(id) {
+  return id ? (CERCEVELER.find(c => c.id === id) || null) : null;
+}
+
+/* ----------------------------------------------------------
    KÜTÜPHANE (konular + objeler + sorular)
 ---------------------------------------------------------- */
 function kutuphaneYukle() {
@@ -342,7 +363,16 @@ function kutuphaneYukle() {
   if (!k || !Array.isArray(k) || !k.length) {
     k = JSON.parse(JSON.stringify(TOHUM_KONULAR));
   }
-  // eksik alanları tamamla + objelere id ver
+  konulariTamamla(k);
+  // sırası hiç verilmemişse mevcut diziliş sırasını sabitle
+  if (k.every(x => x.sira === 0)) k.forEach((x, i) => { x.sira = i; });
+  durum.kutuphane = k;
+}
+
+/* Eksik alanları tamamlar, eski kayıtları yeni modele taşır.
+   Buluttan gelen konular da buradan geçer — orada da alan eksik olabilir
+   ve ham veriyi doğrudan kullanmak eski sürüm kayıtlarında çöküyordu. */
+function konulariTamamla(k) {
   k.forEach(konu => {
     konu.ayar = Object.assign({
       ilIsimleri: true, objeGorunur: "cevapta", cevapBirimi: "il",
@@ -354,7 +384,8 @@ function kutuphaneYukle() {
     konu.objeler = (konu.objeler || []).map(o => {
       const obje = Object.assign({
         id: yeniId(), tip: "emoji", emoji: "📍", ad: "", iller: [], soruMetni: "",
-        x: null, y: null, boyut: 1, aci: 0,
+        ilce: "", cerceve: null,
+        x: null, y: null, boyut: 2, aci: 0,
         noktalar: null, renk: null, kalinlik: 3,
         desen: "duz", saydamlik: 0.45,
         baloncuklar: [],
@@ -369,13 +400,20 @@ function kutuphaneYukle() {
       if (obje.soruMetni && !obje.sorular.length) obje.sorular = [{ metin: obje.soruMetni }];
       delete obje.soruMetni;
       if (!Array.isArray(obje.iller)) obje.iller = [];
+      if (typeof obje.ilce !== "string") obje.ilce = "";
+      if (!cerceveBul(obje.cerceve)) obje.cerceve = null;   // silinmiş çerçeve objeyi kaybettirmesin
+      /* Varsayılan obje boyutu 1'den 2'ye çıktı; eski kayıtlar bir kez büyür.
+         İşaret objenin kendisinde durur — buluttan eski bir kopya dönerse o da
+         geçişten geçer, zaten büyütülmüş obje ikinci kez ellenmez. */
+      if (!obje.b2) {
+        if (obje.tip === "emoji") obje.boyut = 2;
+        obje.b2 = 1;
+      }
       return obje;
     });
     konu.sorular = konu.sorular || [];
   });
-  // sırası hiç verilmemişse mevcut diziliş sırasını sabitle
-  if (k.every(x => x.sira === 0)) k.forEach((x, i) => { x.sira = i; });
-  durum.kutuphane = k;
+  return k;
 }
 
 /* ---- üst konular (ana ekrandaki kapsayıcı kutular) ---- */
@@ -482,28 +520,87 @@ function siralamaGecerliMi(sira, adet) {
   return gorulen.size === adet && sira.every(i => Number.isInteger(i) && i >= 0 && i < adet);
 }
 
+/* ---- soru grupları ----
+   Aynı adı taşıyan objeler tek soruda birleşir: bor Eskişehir, Balıkesir ve
+   Kütahya'da ayrı ayrı işaretlidir ama soru bir tanedir, üçünü de bulman
+   gerekir. Çerçeve ayırıcıdır — Konya'da çıkarılan boksit ile işlenen boksit
+   aynı adı taşısa da ayrı iki soru olur. Adsız objeler birleşmez. */
+function soruGrupAnahtari(o) {
+  const ad = (o.ad || "").trim().toLocaleLowerCase("tr");
+  return ad ? `${ad} :: ${o.cerceve || ""}` : `adsiz:: ${o.id}`;
+}
+
+/* Soru metnine giren parantez: "(işleniyor · Bigadiç, Kırka)".
+   Çerçeve de ilçe de boşsa hiç parantez çıkmaz — taşkömürü gibi
+   yalnızca yeri sorulan objeler sade kalır. */
+function soruEki(grup) {
+  const parcalar = [];
+  const cer = cerceveBul(grup[0].cerceve);
+  if (cer) parcalar.push(cer.ad.toLocaleLowerCase("tr"));
+  const ilceler = [];
+  grup.forEach(o => {
+    const i = (o.ilce || "").trim();
+    if (i && !ilceler.includes(i)) ilceler.push(i);
+  });
+  if (ilceler.length) parcalar.push(ilceler.join(", "));
+  return parcalar.length ? ` (${parcalar.join(" · ")})` : "";
+}
+
+/* Kendi yazdığın soruda ilçeyi zaten anmışsan parantez ikinci kez eklenmez. */
+function ekiUygula(metin, ek) {
+  if (!ek) return metin;
+  const alt = metin.toLocaleLowerCase("tr");
+  const kalan = ek.slice(2, -1).split(" · ").filter(p => !alt.includes(p.toLocaleLowerCase("tr")));
+  return kalan.length ? `${metin} (${kalan.join(" · ")})` : metin;
+}
+
+/* Soru yazılmamışsa üretilen metin. Ek, adın hemen ardına girer:
+   "Bor yatakları (Bigadiç, Kırka) hangi illerimizdedir?" */
+function otomatikSoruMetni(grup, birim, ek, ilAdedi) {
+  const ad = (grup[0].ad || "…") + (ek || "");
+  if (birim === "obje") return `Hangisi ${ad}?`;
+  if (birim === "bolge") return `${ad} hangi bölgemizdedir?`;
+  return ilAdedi > 1 ? `${ad} hangi illerimizdedir?` : `${ad} hangi ilimizdedir?`;
+}
+
 /* Konudan soru listesi üretir.
-   Bir objenin birden fazla soru metni olabilir; her biri ayrı soru olur.
+   Bir gruba birden fazla soru metni yazılabilir; her biri ayrı soru olur.
    Cevap birimi konu ayarından gelir (obje düzeyinde ayar yok). */
 function sorulariUret(konu) {
   const birim = konu.ayar.cevapBirimi || "il";
 
   if (konu.objeler && konu.objeler.length) {
-    const liste = [];
+    const gruplar = new Map();
     konu.objeler.forEach(o => {
-      const metinler = (o.sorular || []).map(x => (x.metin || "").trim()).filter(Boolean);
-      if (!metinler.length) {
-        metinler.push(
-          birim === "obje" ? `Hangisi ${o.ad}?`
-          : birim === "bolge" ? `${o.ad} hangi bölgemizdedir?`
-          : (o.iller.length > 1 ? `${o.ad} hangi illerimizdedir?` : `${o.ad} hangi ilimizdedir?`));
-      }
+      const anahtar = soruGrupAnahtari(o);
+      if (!gruplar.has(anahtar)) gruplar.set(anahtar, []);
+      gruplar.get(anahtar).push(o);
+    });
+
+    const liste = [];
+    gruplar.forEach(grup => {
+      const ek = soruEki(grup);
+      const iller = [];
+      grup.forEach(o => o.iller.forEach(il => { if (!iller.includes(il)) iller.push(il); }));
+      const idler = grup.map(o => o.id);
+
+      /* gruptaki herhangi bir objeye yazılmış metinler ortaktır */
+      const yazilan = [];
+      grup.forEach(o => (o.sorular || []).forEach(x => {
+        const m = (x.metin || "").trim();
+        if (m && !yazilan.includes(m)) yazilan.push(m);
+      }));
+      const metinler = yazilan.length
+        ? yazilan.map(m => ekiUygula(m, ek))
+        : [otomatikSoruMetni(grup, birim, ek, iller.length)];
+
       metinler.forEach(metin => liste.push({
         metin,
         birim,
-        hedefIller: o.iller.slice(),
-        hedefObjeler: birim === "obje" ? [o.id] : [],
-        objeId: o.id
+        hedefIller: iller.slice(),
+        hedefObjeler: birim === "obje" ? idler.slice() : [],
+        objeId: idler[0],
+        objeIdler: idler.slice()
       }));
     });
     return liste;
@@ -513,9 +610,10 @@ function sorulariUret(konu) {
   const varsayilan = birim === "obje" ? "il" : birim;
   return (konu.sorular || []).map(s => {
     if (s.bolge) {
-      return { metin: s.metin, birim: "bolge", bolge: s.bolge, hedefIller: (BOLGELER[s.bolge] || []).slice() };
+      return { metin: s.metin, birim: "bolge", bolge: s.bolge,
+               hedefIller: (BOLGELER[s.bolge] || []).slice(), objeIdler: [] };
     }
-    return { metin: s.metin, birim: varsayilan, hedefIller: (s.hedef || []).slice() };
+    return { metin: s.metin, birim: varsayilan, hedefIller: (s.hedef || []).slice(), objeIdler: [] };
   });
 }
 
@@ -1033,11 +1131,16 @@ class Harita {
       } else {
         const k = objeKonum(objeler, o);
         const boy = 13 * (o.boyut || 1);
-        const yerlesim = `translate(${k.x.toFixed(1)} ${k.y.toFixed(1)}) rotate(${o.aci || 0})`;
+        /* çerçeveli objede emoji küçülür ve çerçevenin kapısına iner */
+        const cerceve = cerceveBul(o.cerceve);
+        if (cerceve) this.cerceveCiz(g, cerceve, k, boy);
+        const boyIc = cerceve ? boy * CERCEVE_EMOJI : boy;
+        const merkez = cerceve ? { x: k.x, y: k.y + boy * CERCEVE_OLCEK * CERCEVE_KAPI_Y } : k;
+        const yerlesim = `translate(${merkez.x.toFixed(1)} ${merkez.y.toFixed(1)}) rotate(${o.aci || 0})`;
         const gorsel = o.gorselId ? gorselBul(o.gorselId) : null;
 
         if (o.gorselId && gorsel) {
-          const en = boy * 1.55;                       // emojiyle kabaca aynı görsel ağırlık
+          const en = boyIc * 1.55;                       // emojiyle kabaca aynı görsel ağırlık
           const im = document.createElementNS(SVG_AD, "image");
           im.setAttribute("class", "emoji-govde gorsel-govde");
           im.setAttribute("x", (-en / 2).toFixed(2));
@@ -1051,7 +1154,7 @@ class Harita {
         } else {
           const t = document.createElementNS(SVG_AD, "text");
           t.setAttribute("class", "emoji-govde");
-          t.setAttribute("font-size", boy.toFixed(1));
+          t.setAttribute("font-size", boyIc.toFixed(1));
           t.setAttribute("transform", yerlesim);
           // görsel paletten silinmişse obje kaybolmasın, yerini belli etsin
           t.textContent = o.gorselId ? "🖼️" : (o.emoji || "📍");
@@ -1064,6 +1167,36 @@ class Harita {
       this.objeAdiCiz(o, objeler);
       this.baloncuklariCiz(o);
     });
+  }
+
+  /* Çerçeve — objenin arkasına çizilen kap.
+     Şekiller birim karede (-1..1) tanımlanır, tek scale ile büyür;
+     böylece yeni bir çerçeve eklemek yalnızca yol yazmak demek. */
+  cerceveCiz(g, cerceve, k, boy) {
+    const s = boy * CERCEVE_OLCEK;
+    const kap = document.createElementNS(SVG_AD, "g");
+    kap.setAttribute("class", "cerceve cerceve-" + cerceve.id);
+    kap.setAttribute("transform",
+      `translate(${k.x.toFixed(1)} ${k.y.toFixed(1)}) scale(${s.toFixed(2)})`);
+
+    const yol = (d, sinif) => {
+      const p = document.createElementNS(SVG_AD, "path");
+      p.setAttribute("d", d);
+      p.setAttribute("class", sinif);
+      kap.appendChild(p);
+    };
+
+    if (cerceve.id === "fabrika") {
+      // baca (gövdenin arkasında kalsın diye önce)
+      yol("M .54 -.12 L .54 -.92 L .78 -.92 L .78 -.12 Z", "cerceve-govde");
+      // testere dişli çatı + bina
+      yol("M -1 .9 L -1 -.12 L -.5 -.5 L -.5 -.12 L 0 -.5 L 0 -.12 L 1 -.12 L 1 .9 Z",
+          "cerceve-govde");
+      // kapı boşluğu: emoji tam buraya oturur
+      yol("M -.4 .9 L -.4 .06 L .4 .06 L .4 .9 Z", "cerceve-kapi");
+    }
+
+    g.appendChild(kap);
   }
 
   /* Hayalet işareti — objenin kimliği gizliyken gövdesinin yerinde duran ❓.
@@ -1421,7 +1554,9 @@ function objeEtiketYeri(obje, objeler) {
     return { x: t[0] / obje.noktalar.length, y: t[1] / obje.noktalar.length };
   }
   const k = objeKonum(objeler, obje);
-  return { x: k.x, y: k.y - 9 * (obje.boyut || 1) };
+  // çerçeveli obje daha yukarı taşar; ad çatının üstünde kalsın
+  const yukseklik = cerceveBul(obje.cerceve) ? 13 : 9;
+  return { x: k.x, y: k.y - yukseklik * (obje.boyut || 1) };
 }
 
 /* Çizginin geçtiği illeri bulur — akarsuyu çizince cevap illeri kendiliğinden çıkar */
@@ -1817,7 +1952,7 @@ function hayaletAcilanlar() {
   if (durum.ayarlar.birikimli) durum.kalanObjeler.forEach(id => acik.add(id));
   const soru = durum.sorular[durum.index];
   if (soru && soru.birim === "obje") durum.bulunanlar.forEach(id => acik.add(id));
-  if (durum.kilit && soru && soru.objeId) acik.add(soru.objeId);
+  if (durum.kilit && soru) (soru.objeIdler || []).forEach(id => acik.add(id));
   return acik;
 }
 
@@ -1869,8 +2004,8 @@ function objeGorunurlukTazele() {
   if (durum.ayarlar.birikimli) {
     // cevaplanmış (pas hariç) tüm objeler haritada birikir
     durum.sorular.forEach((soru, i) => {
-      if (soru.objeId && durum.sonuclar[i] && durum.sonuclar[i] !== "pas") {
-        calismaHarita.objeGoster(soru.objeId, true);
+      if (durum.sonuclar[i] && durum.sonuclar[i] !== "pas") {
+        (soru.objeIdler || []).forEach(id => calismaHarita.objeGoster(id, true));
       }
     });
   }
@@ -2109,9 +2244,11 @@ function objeyeCevapla(objeId) {
 /* cevaptan sonra: objenin adı ve baloncukları açılır */
 function cevapSonrasiGoster() {
   const soru = durum.sorular[durum.index];
-  if (!soru || !soru.objeId) return;
-  if (durum.konu.ayar.objeAdlari !== "hic") calismaHarita.objeAdiGoster(soru.objeId, true);
-  calismaHarita.balonlariGoster(soru.objeId, true);
+  if (!soru) return;
+  (soru.objeIdler || []).forEach(id => {
+    if (durum.konu.ayar.objeAdlari !== "hic") calismaHarita.objeAdiGoster(id, true);
+    calismaHarita.balonlariGoster(id, true);
+  });
 }
 
 function sonrakiSoru() {
@@ -2568,12 +2705,15 @@ function soruTablosuCiz() {
     const kart = document.createElement("div");
     kart.className = "soru-obje" + (secili ? " secili" : "");
     const simge = o.tip === "cizgi" ? "〰️" : o.tip === "alan" ? "⬭" : (o.emoji || "📍");
-    const soruAdet = (o.sorular || []).filter(x => (x.metin || "").trim()).length;
+    const grup = soruGrubu(o, konu);
+    const soruAdet = grup.reduce((t, x) =>
+      t + (x.sorular || []).filter(y => (y.metin || "").trim()).length, 0);
+    const cer = cerceveBul(o.cerceve);
 
     kart.innerHTML = `
       <button class="soru-obje-bas">
         <span class="satir-emoji">${guvenli(simge)}</span>
-        <b>${guvenli(o.ad || "(adsız)")}</b>
+        <b>${guvenli(o.ad || "(adsız)")}${cer ? " " + cer.simge : ""}</b>
         <span class="sayi-rozet">${soruAdet || 1}</span>
       </button>`;
 
@@ -2585,7 +2725,17 @@ function soruTablosuCiz() {
     if (secili) {
       const govde = document.createElement("div");
       govde.className = "soru-obje-govde";
+      const grupIller = [];
+      grup.forEach(x => x.iller.forEach(il => { if (!grupIller.includes(il)) grupIller.push(il); }));
       govde.innerHTML = `
+        ${grup.length > 1 ? `<p class="grup-notu">Bu obje, aynı adı taşıyan <b>${grup.length}</b>
+           objeyle tek soruda birleşiyor: <b>${guvenli(grupIller.join(", "))}</b>.
+           Sorunun hepsini bulman gerekir. Ayırmak istersen adını değiştir ya da farklı bir çerçeve ver.</p>` : ""}
+
+        <label class="alan-etiket">İlçe <i>(isteğe bağlı, soru metnine girer)</i></label>
+        <input class="kucuk-alan" id="obje-ilce" value="${guvenli(o.ilce || "")}"
+               placeholder="Örn. Bigadiç — boş bırakılabilir">
+
         <label class="alan-etiket">İller <span class="sayi-rozet">${o.iller.length}</span></label>
         <div class="il-rozetleri">
           ${o.iller.map(il => `<span class="il-rozet">${guvenli(il)}<button data-il-sil="${guvenli(il)}">✕</button></span>`).join("")}
@@ -2614,6 +2764,10 @@ function soruTablosuCiz() {
         <button class="ikincil-btn ince tam" id="btn-soru-metin-ekle">＋ Soru ekle</button>`;
       kart.appendChild(govde);
 
+      $("#obje-ilce", govde).addEventListener("change", e => {
+        o.ilce = e.target.value.trim();
+        kutuphaneKaydet(); soruTablosuCiz(); bildir("Kaydedildi");
+      });
       $$("[data-il-sil]", govde).forEach(b => b.addEventListener("click", () => {
         o.iller = o.iller.filter(x => x !== b.dataset.ilSil);
         kutuphaneKaydet(); soruTablosuCiz();
@@ -2650,12 +2804,19 @@ function soruTablosuCiz() {
   });
 }
 
-/* soru yazılmamışsa gösterilecek otomatik metin */
+/* soru yazılmamışsa gösterilecek otomatik metin — grubun tamamına bakar */
 function otomatikSoru(o, konu) {
-  const birim = konu.ayar.cevapBirimi || "il";
-  if (birim === "obje") return `Hangisi ${o.ad || "…"}?`;
-  if (birim === "bolge") return `${o.ad || "…"} hangi bölgemizdedir?`;
-  return o.iller.length > 1 ? `${o.ad || "…"} hangi illerimizdedir?` : `${o.ad || "…"} hangi ilimizdedir?`;
+  const grup = soruGrubu(o, konu);
+  const iller = [];
+  grup.forEach(x => x.iller.forEach(il => { if (!iller.includes(il)) iller.push(il); }));
+  return otomatikSoruMetni(grup, konu.ayar.cevapBirimi || "il", soruEki(grup), iller.length);
+}
+
+/* Objenin soruda birlikte anıldığı objeler (kendisi dahil) */
+function soruGrubu(o, konu) {
+  const anahtar = soruGrupAnahtari(o);
+  const grup = (konu.objeler || []).filter(x => soruGrupAnahtari(x) === anahtar);
+  return grup.length ? grup : [o];
 }
 
 /* Harita Düzenle (editör) kodu js/editor.js dosyasında. */
@@ -2796,7 +2957,7 @@ function bulutVerisiGeldi(anahtar) {
 
   if (anahtar === "ayarlar") ayarlariYukle();
   if (anahtar === "palet") paletYukle();
-  if (anahtar === "kutuphane") durum.kutuphane = Depo.oku("kutuphane", []);
+  if (anahtar === "kutuphane") durum.kutuphane = konulariTamamla(Depo.oku("kutuphane", []));
   if (anahtar === "ustKonular") durum.ustKonular = Depo.oku("ustKonular", []);
 
   const aktif = ($("section.ekran.aktif") || {}).id;

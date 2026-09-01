@@ -513,6 +513,10 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 .obje.cizgi .tiklama-seridi{stroke:transparent;stroke-width:14;fill:none;stroke-linecap:round}
 .obje.cizgi .cizgi-govde{fill:none;stroke-linecap:round;stroke-linejoin:round}
 .obje .emoji-govde{text-anchor:middle;dominant-baseline:central}
+/* çerçeve: objenin arkasındaki kap (fabrika vb.) — emoji kapısında durur */
+.cerceve{pointer-events:none}
+.cerceve-govde{fill:#31456b;stroke:#b6c6e2;stroke-width:.085;stroke-linejoin:round}
+.cerceve-kapi{fill:#0d1626;stroke:none}
 .obje{opacity:0;transition:opacity .3s ease;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
 .obje.gorunur{opacity:1}
 .obje.secili{filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 8px var(--mavi))}
@@ -1027,6 +1031,7 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 /* Obje kimliğini gizler: emoji yerine ❓, çizgi/alan nötr gri.
    Şekil yerinde durur — obje modunda tıklanabilir kalması gerekir. */
 .obje.hayalet .emoji-govde{opacity:0}
+.obje.hayalet .cerceve{opacity:0}
 .obje.hayalet .cizgi-govde{stroke:var(--hayalet)}
 .obje.hayalet .alan-govde{fill:var(--hayalet);stroke:var(--hayalet)}
 .obje.hayalet .alan-desen{display:none}
@@ -1068,3 +1073,23 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 /* hesap rozetindeki Google profil fotoğrafı */
 .rozet-avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .rozet-avatar{overflow:hidden}
+
+/* ---- obje boyutu: akıcı kaydırıcı + adım düğmeleri ---- */
+.olcu-satir{display:flex;align-items:center;gap:8px}
+.olcu-satir input[type=range]{flex:1;min-width:0}
+.olcu-btn{
+  flex:0 0 30px;height:30px;border-radius:9px;background:var(--panel2);
+  border:1px solid var(--line);color:var(--metin);font-size:16px;font-weight:700;
+  line-height:1;display:flex;align-items:center;justify-content:center;
+}
+.olcu-btn:active{background:var(--mavi)}
+
+/* ---- çerçeve seçici ---- */
+.cerceve-secim{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.cerceve-ogesi{
+  padding:6px 10px;border-radius:10px;background:var(--panel2);
+  border:1px solid var(--line);font-size:13px;color:var(--sonuk);
+}
+.cerceve-ogesi.secili{border-color:var(--mavi);color:var(--metin);background:#1d305a}
+.grup-notu{font-size:12px;color:var(--sonuk);margin:2px 0 6px;line-height:1.4}
+.grup-notu b{color:var(--metin)}

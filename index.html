@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=44">
+<link rel="stylesheet" href="css/style.css?s=45">
 </head>
 <body>
 
@@ -292,7 +292,15 @@
       <!-- HARİTA MODU -->
       <div id="panel-harita">
         <div class="panel-bolum" id="emoji-bolumu">
-          <label class="alan-etiket">Eklenecek emoji</label>
+          <div class="baslik-satir">
+            <label class="alan-etiket">Eklenecek emoji</label>
+            <div class="liste-arac">
+              <label class="alan-etiket" for="cerceve-toggle">Çerçeve</label>
+              <button class="toggle" id="cerceve-toggle" role="switch"
+                      title="Açıkken haritaya koyduğun her obje seçili çerçeveyle eklenir"><span></span></button>
+            </div>
+          </div>
+          <div class="cerceve-secim gizli" id="cerceve-palet"></div>
           <div class="secim-satir" id="emoji-secim"></div>
           <input type="text" id="emoji-ozel" class="kucuk-alan" maxlength="6" placeholder="veya emoji yapıştır">
           <input type="file" id="gorsel-dosya" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
@@ -376,17 +384,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=44"></script>
-<script src="js/il-merkez.js?s=44"></script>
-<script src="js/komsular.js?s=44"></script>
-<script src="js/hazir-icerik.js?s=44"></script>
+<script src="js/harita-turkiye.js?s=45"></script>
+<script src="js/il-merkez.js?s=45"></script>
+<script src="js/komsular.js?s=45"></script>
+<script src="js/hazir-icerik.js?s=45"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=44"></script>
-<script src="js/data.js?s=44"></script>
-<script src="js/app.js?s=44"></script>
-<script src="js/bulut.js?s=44"></script>
-<script src="js/editor.js?s=44"></script>
-<script src="js/konu-duzen.js?s=44"></script>
+<script src="js/firebase-config.js?s=45"></script>
+<script src="js/data.js?s=45"></script>
+<script src="js/app.js?s=45"></script>
+<script src="js/bulut.js?s=45"></script>
+<script src="js/editor.js?s=45"></script>
+<script src="js/konu-duzen.js?s=45"></script>
 </body>
 </html>
