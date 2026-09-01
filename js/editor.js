@@ -112,9 +112,19 @@ function editorTazele() {
   const birim = konu.ayar.cevapBirimi || "il";
 
   editorHarita.objeleriCiz(konu.objeler);
-  editorHarita.objeKat.style.pointerEvents = (cizim || onizleme) ? "none" : "auto";
-
   editorHarita.sinirModu(birim === "bolge" ? "bolge" : (konu.ayar.ilSinirlari === false ? "yok" : "il"));
+
+  /* Çalış önizlemesi konuya girdiğindeki haritanın birebir aynısı olmalı:
+     yalnız görünüm değil, neyin tıklanabildiği de. Cevap birimi obje /
+     alan / çizgi ise iller sönük ve tıklanmaz, seçim birimleri öne çıkar;
+     il ve bölge birimlerinde tersi. Önceden önizlemede her zaman iller
+     vurgulanıyordu — görüntü doğru, seçim yanlıştı. */
+  const objeSecimi = onizleme && birimObjeMi(birim);
+  const kap = editorHarita.kapsayici;
+  kap.classList.toggle("obje-modu", objeSecimi);
+  kap.classList.toggle("bolge-modu", onizleme && birim === "bolge");
+  editorHarita.objeKat.style.pointerEvents =
+    cizim ? "none" : (onizleme ? (objeSecimi ? "auto" : "none") : "auto");
 
   if (onizleme) {
     /* konuya girildiğinde nasıl görünecekse öyle */
@@ -827,6 +837,7 @@ function editorHaritaOlaylari() {
 
   svg.addEventListener("pointerdown", ev => {
     if (ev.button === 1 || bosluk || gezinmeVarMi()) return;   // gezinme tuşu çizmez
+    if (durum.editorOnizleme === "calis") return;              // önizlemede düzenleme yok
     if (ev.pointerType === "touch" && dokunanlar.size > 1) return;
     const n = editorHarita.svgNokta(ev);
 

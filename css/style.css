@@ -552,8 +552,8 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 }
 .onizleme-yol{stroke-dasharray:6 4;stroke-linecap:round;stroke-linejoin:round}
 /* obje modunda imleç */
-.harita-alan.obje-modu g[data-plakakodu] path{cursor:default}
-.harita-alan.obje-modu g[data-plakakodu]:hover path{fill:var(--il)}
+.obje-modu g[data-plakakodu] path{cursor:default}
+.obje-modu g[data-plakakodu]:hover path{fill:var(--il)}
 .harita-alan.obje-modu .obje{cursor:pointer}
 .harita-alan.obje-modu .obje.gorunur:hover{filter:drop-shadow(0 0 5px #fff)}
 
