@@ -107,7 +107,7 @@ açılış çalışmazdı.
 - **Konuya içe aktar:** Konu Ayarları kartındaki ⬆ İçe aktar, tek bir JSON
   kodla (yapıştır ya da dosya) konuyu doldurur: ad/simge/renk, ayarlar,
   objeler (`"iller": ["Mardin", "Balıkesir/Bigadiç"]`) ve yazılı sorular
-  (`il` / `bolge`). Biçimin tamamı `js/konu-duzen.js` içindeki yorumda.
+  (`il` / `bolge`). Biçimin tamamı [KONU-EKLEME.md](KONU-EKLEME.md) içinde.
   Objelerin x/y'si boş bırakılır, `objeKonum` il yazısının yanına dağıtır.
 
 ### Kaynak

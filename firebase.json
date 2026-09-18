@@ -6,7 +6,8 @@
       "**/.*",
       "**/.*/**",
       "**/node_modules/**",
-      "README.md"
+      "README.md",
+      "KONU-EKLEME.md"
     ],
     "headers": [
       {
