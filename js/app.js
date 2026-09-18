@@ -1940,6 +1940,13 @@ function konuyuBaslat(konu) {
   if (kayit && !bitmis && kayit.index > 0) bildir("Kaldığın yerden devam");
 }
 
+/* Genel "Birikimli öğrenme" açık olsa da konu kendi ayarıyla kapatabilir:
+   YHT gibi soruların cevapları iç içe geçen konularda biriken obje ve
+   il adları sonraki sorunun cevabını ele verir. */
+function birikimliMi() {
+  return !!durum.ayarlar.birikimli && !(durum.konu && durum.konu.ayar && durum.konu.ayar.birikmesin);
+}
+
 /* Birikimli öğrenme: doğru bilinenlerin adları haritada kalır.
    Konu ayarı "il isimleri açık" ise zaten hepsi yazılıdır, bu katman onun üstüne biner. */
 function isimleriTazele() {
@@ -1947,7 +1954,7 @@ function isimleriTazele() {
   calismaHarita.ilAdlariniTemizle();
   $$(".obje-adi", calismaHarita.adKat).forEach(t => t.classList.remove("acik"));
 
-  if (!durum.ayarlar.birikimli) return;
+  if (!birikimliMi()) return;
   durum.kalanIller.forEach(p => calismaHarita.ilAdiGoster(p, true));
   if (durum.konu.ayar.objeAdlari !== "hic") {
     durum.kalanObjeler.forEach(id => calismaHarita.objeAdiGoster(id, true));
@@ -1968,7 +1975,7 @@ function hayaletAktifMi(konu) {
 /* Kimliği açılmış objeler: kalıcılık "Birikimli öğrenme" ayarına bağlıdır. */
 function hayaletAcilanlar() {
   const acik = new Set(durum.hayaletGecici);
-  if (durum.ayarlar.birikimli) durum.kalanObjeler.forEach(id => acik.add(id));
+  if (birikimliMi()) durum.kalanObjeler.forEach(id => acik.add(id));
   const soru = durum.sorular[durum.index];
   if (soru && birimObjeMi(soru.birim)) durum.bulunanlar.forEach(id => acik.add(id));
   if (durum.kilit && soru) (soru.objeIdler || []).forEach(id => acik.add(id));
@@ -2020,7 +2027,7 @@ function objeGorunurlukTazele() {
 
   calismaHarita.tumObjeler(false);
 
-  if (durum.ayarlar.birikimli) {
+  if (birikimliMi()) {
     // cevaplanmış (pas hariç) tüm objeler haritada birikir
     durum.sorular.forEach((soru, i) => {
       if (durum.sonuclar[i] && durum.sonuclar[i] !== "pas") {
@@ -2029,10 +2036,11 @@ function objeGorunurlukTazele() {
     });
   }
 
-  // içinde bulunduğumuz soru cevaplandıysa objesi her hâlükârda görünür
+  // içinde bulunduğumuz soru cevaplandıysa objeleri her hâlükârda görünür —
+  // birden fazla ile yayılan grupta yalnızca ilki değil, hepsi
   const suanki = durum.sorular[durum.index];
-  if (durum.kilit && suanki && suanki.objeId) {
-    calismaHarita.objeGoster(suanki.objeId, true);
+  if (durum.kilit && suanki) {
+    (suanki.objeIdler || []).forEach(id => calismaHarita.objeGoster(id, true));
   }
 }
 
@@ -2119,7 +2127,7 @@ function cevapla(plaka) {
   if (hedefler.includes(plaka)) {
     if (!durum.bulunanlar.includes(plaka)) durum.bulunanlar.push(plaka);
     calismaHarita.boya(plaka, "dogru");
-    if (durum.ayarlar.birikimli && !durum.kalanIller.includes(plaka)) durum.kalanIller.push(plaka);
+    if (birikimliMi() && !durum.kalanIller.includes(plaka)) durum.kalanIller.push(plaka);
 
     if (durum.bulunanlar.length < hedefler.length) {
       ses("dogru"); titre("dogru");
@@ -2240,7 +2248,7 @@ function objeyeCevapla(objeId) {
     if (!durum.bulunanlar.includes(objeId)) durum.bulunanlar.push(objeId);
     calismaHarita.objeIsaretle(objeId, "dogru");
     calismaHarita.objeAdiGoster(objeId, true);
-    if (durum.ayarlar.birikimli && !durum.kalanObjeler.includes(objeId)) durum.kalanObjeler.push(objeId);
+    if (birikimliMi() && !durum.kalanObjeler.includes(objeId)) durum.kalanObjeler.push(objeId);
     hayaletTazele();   // doğru bilinen obje gerçek haline döner
 
     if (durum.bulunanlar.length < hedefler.length) {
@@ -2380,6 +2388,7 @@ function konuAyarIcerik(konu, hedefEl) {
     ${anahtar("İl sınırları görünsün", "ilSinirlari", a.ilSinirlari !== false)}
     ${anahtar("Hayalet mod", "hayalet", a.hayalet && !hayaletPasif, hayaletPasif)}
     ${anahtar("Seçim birimi baştan görünsün", "objeGorunur", a.objeGorunur === "bastan")}
+    ${anahtar("Cevaplananlar haritada birikmesin", "birikmesin", !!a.birikmesin)}
 
     <div class="ayar-satir dikey">
       <div class="ayar-ad">Seçim birimi adları</div>

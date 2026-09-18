@@ -375,7 +375,7 @@ function konuDuzenOlaylari() {
    {
      "konu":  { "ad", "ikon", "renk", "aciklama" },
      "ayar":  { "cevapBirimi", "ilIsimleri", "ilSinirlari", "hayalet",
-                "objeGorunur", "objeAdlari" },
+                "objeGorunur", "objeAdlari", "birikmesin" },
      "objeler": [ { "ad", "emoji", "iller": ["Mardin", "Balıkesir/Bigadiç"],
                     "ilce", "cerceve", "ekGoster", "boyut", "sorular": ["…"] } ],
      "sorular": [ { "metin", "il" | "iller" | "bolge" } ]
@@ -470,7 +470,7 @@ function iceHazirla(veri) {
     if (b) sonuc.ayar.cevapBirimi = b[0];
     else hatalar.push(`Cevap birimi "${a.cevapBirimi}" tanınmadı (il, bolge, obje, alan, cizgi)`);
   }
-  ["ilIsimleri", "ilSinirlari", "hayalet"].forEach(ad => {
+  ["ilIsimleri", "ilSinirlari", "hayalet", "birikmesin"].forEach(ad => {
     if (typeof a[ad] === "boolean") sonuc.ayar[ad] = a[ad];
   });
   if (typeof a.objeGorunur === "boolean") sonuc.ayar.objeGorunur = a.objeGorunur ? "bastan" : "cevapta";

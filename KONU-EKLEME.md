@@ -48,6 +48,12 @@ Her bölüm isteğe bağlı. Yazılmayan her şey olduğu gibi kalır.
 | `hayalet` | `true` / `false` | Hayalet mod (birim "il" iken çalışmaz) |
 | `objeGorunur` | `true` / `false` | Seçim birimi baştan görünsün |
 | `objeAdlari` | `gorunsun` · `cevapta` · `hic` | Seçim birimi adları |
+| `birikmesin` | `true` / `false` | Cevaplananlar haritada birikmesin |
+
+`birikmesin: true` → genel Ayarlar'daki **Birikimli öğrenme** açık olsa bile bu
+konuda cevaplanan objeler ve il adları sonraki soruda kaybolur. Soruların
+cevapları iç içe geçen konular için (ör. YHT: hat soruları, genel sorunun
+alt kümesi) — yoksa haritada kalan simgeler cevabı ele verir.
 
 Cevap birimi için ekrandaki adlar da geçer: `"Obje"`, `"Bölge"`…
 
