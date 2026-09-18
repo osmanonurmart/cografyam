@@ -104,6 +104,11 @@ açılış çalışmazdı.
 - **Telefonu yatay çevirme zorunluluğu yok.** Dikeyde harita küçük kalır,
   yakınlaştırma onu kullanılabilir kılar.
 - **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
+- **Konuya içe aktar:** Konu Ayarları kartındaki ⬆ İçe aktar, tek bir JSON
+  kodla (yapıştır ya da dosya) konuyu doldurur: ad/simge/renk, ayarlar,
+  objeler (`"iller": ["Mardin", "Balıkesir/Bigadiç"]`) ve yazılı sorular
+  (`il` / `bolge`). Biçimin tamamı `js/konu-duzen.js` içindeki yorumda.
+  Objelerin x/y'si boş bırakılır, `objeKonum` il yazısının yanına dağıtır.
 
 ### Kaynak
 

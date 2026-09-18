@@ -792,6 +792,28 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .ozet-ad:hover{background:rgba(0,0,0,.16)}
 .ozet-ad:focus{background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.35)}
 .ozet-alt{font-size:12.5px;color:rgba(255,255,255,.75);margin-top:2px}
+.ozet-yazi{flex:1;min-width:0}
+.ozet-ice{
+  flex:none;white-space:nowrap;color:inherit;font-weight:700;font-size:13px;
+  padding:8px 13px;border-radius:11px;
+  background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.18);transition:background .15s ease;
+}
+.ozet-ice:hover{background:rgba(0,0,0,.34)}
+@media (max-width:420px){ .ozet-ice span{display:none} }
+
+/* İçe aktar kutusu */
+.ice-metin{
+  display:block;width:100%;min-height:180px;resize:vertical;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12.5px;line-height:1.45;
+}
+.ice-dosya-satir{display:flex;justify-content:flex-end;margin-top:8px}
+.ice-sonuc{
+  margin-top:14px;padding:11px 13px;border-radius:12px;font-size:13px;line-height:1.5;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:#fecaca;
+}
+.ice-sonuc.basarili{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fde68a}
+.ice-sonuc ul{margin:6px 0 0;padding-left:18px;max-height:180px;overflow-y:auto}
+.ice-sonuc li{margin:2px 0}
 .ayar-alani{display:block}
 #btn-ayardan-duzenle{margin-top:6px}
 

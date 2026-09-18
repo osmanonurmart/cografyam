@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=55">
+<link rel="stylesheet" href="css/style.css?s=56">
 </head>
 <body>
 
@@ -294,6 +294,31 @@
   </div>
 </div>
 
+<div class="modal gizli" id="modal-konu-ice">
+  <div class="modal-kart genis-kart">
+    <h3>Konuya içe aktar</h3>
+    <p class="ortu-alt">Aldığın kodu yapıştır ya da .json dosyasını seç.</p>
+    <textarea id="ice-metin" class="kucuk-alan ice-metin" spellcheck="false" autocomplete="off"
+              placeholder='{ "objeler": [ { "ad": "Demir", "emoji": "🔩", "iller": ["Mardin", "Muğla"] } ] }'></textarea>
+    <div class="ice-dosya-satir">
+      <button class="metin-btn ince" id="btn-ice-dosya">📄 Dosya seç</button>
+    </div>
+    <input type="file" id="ice-dosya" accept="application/json,.json,.txt" hidden>
+    <div id="ice-mod" class="gizli">
+      <label class="alan-etiket">Konuda zaten içerik var</label>
+      <div class="secenek-satir" id="ice-mod-secim">
+        <button class="secenek secili" data-deger="ekle">Üstüne ekle</button>
+        <button class="secenek" data-deger="degistir">Hepsini değiştir</button>
+      </div>
+    </div>
+    <div id="ice-sonuc" class="ice-sonuc gizli"></div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-ice-uygula">İçe aktar</button>
+      <button class="ikincil-btn" id="btn-ice-kapat">Vazgeç</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal gizli" id="modal-konu-ekle">
   <div class="modal-kart">
     <h3>Yeni Konu</h3>
@@ -338,17 +363,17 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=55"></script>
-<script src="js/il-merkez.js?s=55"></script>
-<script src="js/komsular.js?s=55"></script>
-<script src="js/hazir-icerik.js?s=55"></script>
+<script src="js/harita-turkiye.js?s=56"></script>
+<script src="js/il-merkez.js?s=56"></script>
+<script src="js/komsular.js?s=56"></script>
+<script src="js/hazir-icerik.js?s=56"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=55"></script>
-<script src="js/data.js?s=55"></script>
-<script src="js/app.js?s=55"></script>
-<script src="js/bulut.js?s=55"></script>
-<script src="js/editor.js?s=55"></script>
-<script src="js/konu-duzen.js?s=55"></script>
+<script src="js/firebase-config.js?s=56"></script>
+<script src="js/data.js?s=56"></script>
+<script src="js/app.js?s=56"></script>
+<script src="js/bulut.js?s=56"></script>
+<script src="js/editor.js?s=56"></script>
+<script src="js/konu-duzen.js?s=56"></script>
 </body>
 </html>

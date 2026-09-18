@@ -274,6 +274,7 @@ function konuAyarEkraniCiz() {
                placeholder="Konu adı" title="Adı değiştirmek için tıkla">
         <div class="ozet-alt">${soru} soru · ${ust ? guvenli(ust.ikon + " " + ust.ad) : "kapsayıcısız"}</div>
       </div>
+      <button class="ozet-ice" id="btn-konu-ice" title="Koddan ya da dosyadan içerik ekle">⬆<span> İçe aktar</span></button>
     </div>
     <div class="ayar-alani" id="ayar-alani"></div>
     <button class="ana-btn tam" id="btn-ayardan-duzenle">Sorulara geç →</button>`;
@@ -291,6 +292,7 @@ function konuAyarEkraniCiz() {
   });
 
   $("#btn-konu-gorunum").addEventListener("click", () => konuGorunumAc(konu));
+  $("#btn-konu-ice").addEventListener("click", () => konuIceAc(konu));
   /* Akışın devamı: ayarları seçtin, şimdi soruları yaz */
   $("#btn-ayardan-duzenle").addEventListener("click", () => {
     durum.editorKonuId = konu.id;
@@ -359,8 +361,257 @@ function konuDuzenOlaylari() {
   });
   $("#btn-yeni-konu-ayar").addEventListener("click", konuEkleModalAc);
 
+  konuIceOlaylari();
+
   $("#btn-gorunum-kapat").addEventListener("click", () => $("#modal-konu-gorunum").classList.add("gizli"));
   $("#modal-konu-gorunum").addEventListener("click", e => {
     if (e.target.id === "modal-konu-gorunum") e.target.classList.add("gizli");
+  });
+}
+
+/* ==========================================================
+   KONU İÇE AKTAR — tek kodla konuyu doldurur
+   Biçim (her alan isteğe bağlı):
+   {
+     "konu":  { "ad", "ikon", "renk", "aciklama" },
+     "ayar":  { "cevapBirimi", "ilIsimleri", "ilSinirlari", "hayalet",
+                "objeGorunur", "objeAdlari" },
+     "objeler": [ { "ad", "emoji", "iller": ["Mardin", "Balıkesir/Bigadiç"],
+                    "ilce", "cerceve", "ekGoster", "boyut", "sorular": ["…"] } ],
+     "sorular": [ { "metin", "il" | "iller" | "bolge" } ]
+   }
+   Her il ayrı bir seçim birimi olur ama aynı adı taşıdıkları için tek
+   soruda toplanır. x/y boş bırakılır: objeKonum onları il yazısının
+   yanına koyar, aynı ildekileri etrafa dağıtır.
+   ========================================================== */
+let iceKonu = null;
+
+/* Türkçe harfleri ve büyük/küçük farkını yok sayar: "MUGLA" = "Muğla" */
+function iceKatla(s) {
+  const tablo = { ç: "c", ğ: "g", ı: "i", ö: "o", ş: "s", ü: "u", â: "a", î: "i", û: "u" };
+  return String(s == null ? "" : s).toLocaleLowerCase("tr")
+    .replace(/[çğıöşüâîû]/g, c => tablo[c])
+    .replace(/\s+/g, " ").trim();
+}
+
+const IL_TAKMA_ADLARI = {
+  afyon: "Afyonkarahisar", maras: "Kahramanmaraş", "k.maras": "Kahramanmaraş",
+  urfa: "Şanlıurfa", antep: "Gaziantep", icel: "Mersin"
+};
+
+function iceIlBul(ad) {
+  const k = iceKatla(ad);
+  if (!k) return null;
+  if (IL_TAKMA_ADLARI[k]) return IL_TAKMA_ADLARI[k];
+  return IL_ADLARI.find(il => iceKatla(il) === k) || null;
+}
+
+function iceBolgeBul(ad) {
+  const k = iceKatla(ad).replace(/ bolgesi$/, "");
+  return Object.keys(BOLGELER).find(b =>
+    iceKatla(b) === k || iceKatla(b).replace(/ anadolu$/, "") === k) || null;
+}
+
+/* null = çerçeve yok, undefined = yazılmış ama tanınmadı */
+function iceCerceveBul(ad) {
+  const k = iceKatla(ad);
+  if (!k) return null;
+  const c = CERCEVELER.find(c => iceKatla(c.id) === k || iceKatla(c.ad) === k || c.simge === ad);
+  return c ? c.id : undefined;
+}
+
+/* Metni ya da diziyi listeye çevirir: "Mardin, Muğla" -> ["Mardin", "Muğla"] */
+function iceListe(v) {
+  if (Array.isArray(v)) return v;
+  if (typeof v === "string") return v.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  return [];
+}
+
+function iceMetinler(v) {
+  return iceListe(v).map(x => typeof x === "string" ? x : (x && x.metin) || "")
+    .map(s => String(s).trim()).filter(Boolean);
+}
+
+/* Yapıştırılan metni çözer. ```json çitleri ve sondaki virgüller
+   (yapay zekâ çıktısında sık görülür) sorun çıkarmasın. */
+function iceCoz(metin) {
+  let m = String(metin || "").trim()
+    .replace(/^```[a-z]*\s*/i, "").replace(/```\s*$/, "").trim();
+  if (!m) throw new Error("Kutu boş — kodu yapıştır ya da dosya seç");
+  m = m.replace(/,\s*([}\]])/g, "$1").replace(/,\s*$/, "");
+  let veri;
+  try { veri = JSON.parse(m); }
+  catch (e) { throw new Error("Kod okunamadı — geçerli bir JSON değil (" + e.message + ")"); }
+  if (!veri || typeof veri !== "object" || Array.isArray(veri)) throw new Error("Kod bir { … } nesnesi olmalı");
+  if (veri.uygulama === "cografyam" && veri.veri) {
+    throw new Error("Bu bir tam yedek dosyası. Onu Düzenle ekranındaki ⬆ İçe aktar ile yükle.");
+  }
+  return veri;
+}
+
+/* Kodu konuya uygulanacak parçalara çevirir; hiçbir şeyi değiştirmez. */
+function iceHazirla(veri) {
+  const hatalar = [];
+  const sonuc = { konu: {}, ayar: {}, objeler: [], sorular: [] };
+
+  const k = veri.konu || {};
+  if (typeof k.ad === "string" && k.ad.trim()) sonuc.konu.ad = k.ad.trim().slice(0, 28);
+  if (typeof k.ikon === "string" && k.ikon.trim()) sonuc.konu.ikon = k.ikon.trim();
+  if (typeof k.aciklama === "string") sonuc.konu.aciklama = k.aciklama.trim().slice(0, 40);
+  if (k.renk !== undefined) {
+    if (/^#[0-9a-f]{6}$/i.test(k.renk)) sonuc.konu.renk = k.renk;
+    else hatalar.push(`Renk "${k.renk}" tanınmadı — #3b82f6 gibi yazılmalı`);
+  }
+
+  const a = veri.ayar || {};
+  if (a.cevapBirimi !== undefined) {
+    const b = BIRIMLER.find(([d, ad]) =>
+      iceKatla(d) === iceKatla(a.cevapBirimi) || iceKatla(ad) === iceKatla(a.cevapBirimi));
+    if (b) sonuc.ayar.cevapBirimi = b[0];
+    else hatalar.push(`Cevap birimi "${a.cevapBirimi}" tanınmadı (il, bolge, obje, alan, cizgi)`);
+  }
+  ["ilIsimleri", "ilSinirlari", "hayalet"].forEach(ad => {
+    if (typeof a[ad] === "boolean") sonuc.ayar[ad] = a[ad];
+  });
+  if (typeof a.objeGorunur === "boolean") sonuc.ayar.objeGorunur = a.objeGorunur ? "bastan" : "cevapta";
+  else if (a.objeGorunur === "bastan" || a.objeGorunur === "cevapta") sonuc.ayar.objeGorunur = a.objeGorunur;
+  if (["gorunsun", "cevapta", "hic"].includes(a.objeAdlari)) sonuc.ayar.objeAdlari = a.objeAdlari;
+
+  (Array.isArray(veri.objeler) ? veri.objeler : []).forEach((o, sira) => {
+    if (!o || typeof o !== "object") return;
+    const ad = String(o.ad || "").trim();
+    const etiket = ad || `${sira + 1}. obje`;
+    const cerceve = o.cerceve ? iceCerceveBul(o.cerceve) : null;
+    if (cerceve === undefined) hatalar.push(`${etiket}: çerçeve "${o.cerceve}" tanınmadı, çerçevesiz eklendi`);
+    const sorular = iceMetinler(o.sorular || o.soru).map(metin => ({ metin }));
+    const boyut = Number(o.boyut);
+
+    /* "Balıkesir/Bigadiç" biçimi ilçeyi o ile özel verir */
+    const yerler = [...iceListe(o.iller), ...iceListe(o.il)];
+    if (!yerler.length) { hatalar.push(`${etiket}: il yazılmamış, atlandı`); return; }
+    let ilk = true;
+    yerler.forEach(yer => {
+      const [ilAd, ilceAd] = String(yer).split("/").map(s => s.trim());
+      const il = iceIlBul(ilAd);
+      if (!il) { hatalar.push(`${etiket}: "${ilAd}" diye bir il yok, atlandı`); return; }
+      sonuc.objeler.push({
+        id: yeniId(), tip: "emoji",
+        emoji: String(o.emoji || "📍").trim() || "📍", gorselId: null,
+        ad, iller: [il], ilce: ilceAd || String(o.ilce || "").trim(),
+        cerceve: cerceve || null, ekGoster: o.ekGoster !== false,
+        x: null, y: null, boyut: boyut > 0 ? boyut : 2, aci: 0,
+        noktalar: null, renk: null, kalinlik: 3, baloncuklar: [],
+        sorular: ilk ? sorular : []          // metinler gruba ortak, bir kez yeter
+      });
+      ilk = false;
+    });
+  });
+
+  (Array.isArray(veri.sorular) ? veri.sorular : []).forEach((s, sira) => {
+    const metin = typeof s === "string" ? s.trim() : String((s && s.metin) || "").trim();
+    const etiket = metin ? `"${metin.length > 30 ? metin.slice(0, 30) + "…" : metin}"` : `${sira + 1}. soru`;
+    if (!metin) { hatalar.push(`${etiket}: metin yok, atlandı`); return; }
+    if (s.bolge) {
+      const bolge = iceBolgeBul(s.bolge);
+      if (!bolge) { hatalar.push(`${etiket}: "${s.bolge}" diye bir bölge yok, atlandı`); return; }
+      sonuc.sorular.push({ metin, bolge });
+      return;
+    }
+    const hedef = [];
+    [...iceListe(s.iller), ...iceListe(s.il), ...iceListe(s.hedef)].forEach(ad => {
+      const il = iceIlBul(ad);
+      if (!il) hatalar.push(`${etiket}: "${ad}" diye bir il yok`);
+      else if (!hedef.includes(il)) hedef.push(il);
+    });
+    if (!hedef.length) { hatalar.push(`${etiket}: cevap ili ya da bölgesi yok, atlandı`); return; }
+    sonuc.sorular.push({ metin, hedef });
+  });
+
+  return { sonuc, hatalar };
+}
+
+function konuIceAc(konu) {
+  iceKonu = konu;
+  $("#ice-metin").value = "";
+  $("#ice-sonuc").className = "ice-sonuc gizli";
+  $("#ice-sonuc").innerHTML = "";
+  const dolu = (konu.objeler || []).length + (konu.sorular || []).length > 0;
+  $("#ice-mod").classList.toggle("gizli", !dolu);
+  $$("#ice-mod-secim .secenek").forEach(b => b.classList.toggle("secili", b.dataset.deger === "ekle"));
+  $("#btn-ice-uygula").classList.remove("gizli");
+  $("#btn-ice-kapat").textContent = "Vazgeç";
+  $("#modal-konu-ice").classList.remove("gizli");
+  setTimeout(() => $("#ice-metin").focus(), 60);
+}
+
+function iceKapat() {
+  $("#modal-konu-ice").classList.add("gizli");
+  iceKonu = null;
+}
+
+function iceSonucGoster(baslik, hatalar, basarili) {
+  const kutu = $("#ice-sonuc");
+  kutu.className = "ice-sonuc" + (basarili ? " basarili" : "");
+  kutu.innerHTML = `<b>${guvenli(baslik)}</b>` + (hatalar.length
+    ? `<ul>${hatalar.map(h => `<li>${guvenli(h)}</li>`).join("")}</ul>` : "");
+}
+
+function konuIceUygula() {
+  const konu = iceKonu && konuBul(iceKonu.id);
+  if (!konu) { iceKapat(); return; }
+
+  let veri;
+  try { veri = iceCoz($("#ice-metin").value); }
+  catch (e) { iceSonucGoster(e.message, [], false); return; }
+
+  const { sonuc, hatalar } = iceHazirla(veri);
+  const eklenecek = sonuc.objeler.length + sonuc.sorular.length;
+  if (!eklenecek && !Object.keys(sonuc.konu).length && !Object.keys(sonuc.ayar).length) {
+    iceSonucGoster("Eklenecek bir şey bulunamadı", hatalar, false);
+    return;
+  }
+
+  const secili = $("#ice-mod-secim .secenek.secili");
+  const degistir = !$("#ice-mod").classList.contains("gizli") && secili && secili.dataset.deger === "degistir";
+  if (degistir) { konu.objeler = []; konu.sorular = []; }
+  konu.objeler.push(...sonuc.objeler);
+  konu.sorular = (konu.sorular || []).concat(sonuc.sorular);
+  Object.assign(konu, sonuc.konu);
+  Object.assign(konu.ayar, sonuc.ayar);
+
+  konuAyarUygula(konu);                      // kaydeder, açık harita varsa tazeler
+  konuSeciciDoldur($("#konu-ayar-sec"));
+  $("#konu-ayar-sec").value = konu.id;
+  konuAyarEkraniCiz();
+
+  const iller = new Set(sonuc.objeler.map(o => o.iller[0])).size;
+  const ozet = `${sonuc.objeler.length} obje (${iller} il), ${sonuc.sorular.length} yazılı soru ` +
+               (degistir ? "ile konu yenilendi" : "eklendi");
+  if (!hatalar.length) { iceKapat(); bildir(ozet, 3200); return; }
+
+  /* uyarı varsa pencere açık kalsın ki hangi satırın atlandığı görülsün */
+  iceSonucGoster(ozet + " — şunlara dikkat:", hatalar, true);
+  $("#ice-mod").classList.add("gizli");
+  $("#btn-ice-uygula").classList.add("gizli");
+  $("#btn-ice-kapat").textContent = "Kapat";
+}
+
+function konuIceOlaylari() {
+  $("#btn-ice-uygula").addEventListener("click", konuIceUygula);
+  $("#btn-ice-kapat").addEventListener("click", iceKapat);
+  $("#modal-konu-ice").addEventListener("click", e => {
+    if (e.target.id === "modal-konu-ice") iceKapat();
+  });
+  $$("#ice-mod-secim .secenek").forEach(b => b.addEventListener("click", () => {
+    $$("#ice-mod-secim .secenek").forEach(x => x.classList.toggle("secili", x === b));
+  }));
+  $("#btn-ice-dosya").addEventListener("click", () => $("#ice-dosya").click());
+  $("#ice-dosya").addEventListener("change", async e => {
+    const dosya = e.target.files[0];
+    e.target.value = "";
+    if (!dosya) return;
+    try { $("#ice-metin").value = await dosya.text(); }
+    catch (err) { iceSonucGoster("Dosya okunamadı", [], false); return; }
+    konuIceUygula();
   });
 }
