@@ -398,16 +398,17 @@ g#guney-kibris,g#kuzey-kibris{display:none}
   .soru-bar{padding:6px 12px;gap:8px}
 }
 
-/* ---------- yatay telefon: soru üst barda, düğmeler haritanın köşelerinde ----------
+/* ---------- yatay telefon: soru ve düğmeler üst barda ----------
    Üst bar ve alt soru çubuğu `display:contents` ile erir; parçaları ekranın
-   ızgarasına yerleşir. Böylece alt çubuğun yüksekliği haritaya kalır.
-   Sütunlar: [çıkış] [konu adı] [soru] [skor]; satırlar: [üst bar] [harita]. */
+   ızgarasına yerleşir, alt çubuğun yüksekliği haritaya kalır.
+   Sütunlar: [çıkış] [konu adı] [Geri] [soru] [Pas] [skor/yakınlaştır];
+   satırlar: [üst bar] [harita]. */
 @media (orientation:landscape) and (max-height:500px){
   #ekran-calisma.aktif{
     display:grid;
-    grid-template-columns:auto minmax(0,1fr) minmax(0,2.6fr) auto;
+    grid-template-columns:auto minmax(0,1fr) auto minmax(0,2.6fr) auto auto;
     grid-template-rows:auto minmax(0,1fr);
-    column-gap:10px;
+    column-gap:8px;
   }
   /* üst barın zemini ve alt çizgisi (bar eridiği için ayrı çiziliyor) */
   #ekran-calisma.aktif::before{
@@ -419,26 +420,43 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 
   #btn-cikis{grid-row:1;grid-column:1;align-self:center;margin:max(5px,env(safe-area-inset-top)) 0 5px max(12px,env(safe-area-inset-left))}
   .calisma-bilgi{grid-row:1;grid-column:2;align-self:center}
+
+  /* Geri — soru — Pas aynı hizada, aynı yükseklikte */
+  #btn-geri{grid-row:1;grid-column:3}
+  #btn-pas{grid-row:1;grid-column:5}
+  #btn-geri,#btn-pas{align-self:center;width:46px;height:50px;border-radius:12px}
+  #btn-geri .etiket,#btn-pas .etiket{display:block;font-size:9.5px}
   .soru-kutu{
-    grid-row:1;grid-column:3;align-self:center;justify-self:stretch;
-    height:44px;margin:5px 0;padding:0 14px;border-radius:12px;box-shadow:none;gap:1px;
+    grid-row:1;grid-column:4;align-self:center;justify-self:stretch;
+    height:50px;margin:6px 0;padding:0 12px;border-radius:12px;box-shadow:none;gap:1px;
   }
   .soru-metin{font-size:15px}
-  .geri-bildirim{font-size:11.5px;height:14px;line-height:14px;min-height:0}
-  .skor-sutun{grid-row:1;grid-column:4;align-self:center;margin-right:max(12px,env(safe-area-inset-right))}
+  /* uzun soru: iki satır, küçük yazı (soruMetniSigdir sınıfı verir) */
+  .soru-metin.uzun{
+    font-size:12.5px;line-height:1.2;white-space:normal;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  }
+  .geri-bildirim{font-size:11px;height:13px;line-height:13px;min-height:0}
+  /* boşken yer kaplamasın: soru kutunun dikey ortasında dursun */
+  .geri-bildirim:empty{display:none}
+
+  /* skor tek kutu (simgesiz, renkli sayılar) ve Yakınlaştır: aynı en ve boy */
+  .skor-sutun{
+    grid-row:1;grid-column:6;align-self:center;margin-right:max(12px,env(safe-area-inset-right));
+    display:grid;grid-auto-rows:1fr;gap:4px;align-items:stretch;
+  }
+  .skor{
+    justify-content:center;align-items:center;gap:10px;
+    padding:0 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);
+  }
+  .skor .rozet{font-size:0;padding:0;border:0;background:none}
+  .skor .rozet b{font-size:12.5px}
+  .zoom-rozet{justify-content:center}
   .ilerleme-cizgi{position:relative;grid-row:1;grid-column:1/-1;align-self:end;bottom:-1px}
 
   /* harita alta dayalı: Hatay ekranın alt kenarına değer (viewBox: mobilDuzen) */
   .harita-alan{grid-row:2;grid-column:1/-1;padding:0 8px}
 
-  /* Geri ve Pas Karadeniz'in üstünde yüzer; yerlerini mobilDuzen() hesaplar */
-  #btn-geri,#btn-pas{
-    position:absolute;left:10px;top:70px;z-index:5;
-    width:52px;height:46px;
-    background:rgba(20,30,50,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-    box-shadow:0 6px 18px rgba(0,0,0,.35);
-  }
-  #btn-pas{left:70px}
   /* ilerleme her cevapta kaydedildiği için telefonda duraklatmaya gerek yok */
   #btn-durdur,#btn-devam{display:none}
 }

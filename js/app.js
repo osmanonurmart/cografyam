@@ -1878,40 +1878,25 @@ function haritaZoomOlaylari(harita) {
 /* ---- yatay telefon düzeni ----
    Harita kenar boşluksuz, alta dayalı çizilir: Hatay'ın güney ucu
    (y 442.8) ekranın alt kenarına değer, Türkiye'nin tamamı görünür.
-   Geri ve Pas Karadeniz'in üstünde durur; yerleri harita koordinatından
-   hesaplanır, telefon dönünce ya da boyut değişince yeniden yerleşir.
-   Durdur/Devam bu düzende gizli (CSS) — ilerleme zaten her cevapta kaydedilir. */
+   Geri/Pas soru kutusunun iki yanında, Durdur/Devam gizli (CSS) —
+   ilerleme zaten her cevapta kaydedilir. */
 const MOBIL_YATAY = "(orientation: landscape) and (max-height: 500px)";
 const MOBIL_VIEWBOX = "-1 -1 1010 445";
-const DENIZ_DUGMELERI = {           // [x, o hizadaki Karadeniz kıyısının y'si]
-  "btn-geri": [240, 72.5],          // Sakarya–Düzce açıkları
-  "btn-pas":  [650, 86.3]           // Ordu–Giresun açıkları
-};
 
 function mobilDuzen() {
   if (!calismaHarita) return;
   const mobil = matchMedia(MOBIL_YATAY).matches;
   const vb = mobil ? MOBIL_VIEWBOX : HARITA_VIEWBOX;
   if (calismaHarita.temel !== vb) calismaHarita.temelAyarla(vb, mobil ? "xMidYMax meet" : "xMidYMid meet");
+  soruMetniSigdir();
+}
 
-  Object.keys(DENIZ_DUGMELERI).forEach(id => { const b = $("#" + id); b.style.left = b.style.top = ""; });
-  if (!mobil || !$("#ekran-calisma").classList.contains("aktif")) return;
-  if (!calismaHarita.tamGorunumMu()) return;       // yakınlaştırılmışken yerinde kalsın
-
-  const ekran = $("#ekran-calisma").getBoundingClientRect();
-  const alan = $("#harita-alan").getBoundingClientRect();
-  const svg = calismaHarita.svg, ctm = svg.getScreenCTM();
-  if (!ctm) return;
-  const n = svg.createSVGPoint();
-  Object.entries(DENIZ_DUGMELERI).forEach(([id, [x, kiyi]]) => {
-    const b = $("#" + id);
-    n.x = x; n.y = kiyi;
-    const s = n.matrixTransform(ctm);
-    // düğmenin altı kıyının hemen üstünde; deniz dar kalırsa harita kenarına yaslanır
-    const ust = Math.max(alan.top + 4, s.y - b.offsetHeight - 6);
-    b.style.left = (s.x - b.offsetWidth / 2 - ekran.left) + "px";
-    b.style.top = (ust - ekran.top) + "px";
-  });
+/* Yatay telefonda soru tek satıra sığmıyorsa iki satır ve küçük yazı */
+function soruMetniSigdir() {
+  const el = $("#soru-metin");
+  el.classList.remove("uzun");
+  if (!matchMedia(MOBIL_YATAY).matches) return;
+  if (el.scrollWidth > el.clientWidth + 1) el.classList.add("uzun");
 }
 
 let _mobilZaman = null;
@@ -2110,6 +2095,7 @@ function soruyuGoster() {
   if (!soru) { bitir(); return; }
 
   $("#soru-metin").textContent = soru.metin;
+  soruMetniSigdir();
   const gb = $("#geri-bildirim");
   gb.textContent = "";
   gb.className = "geri-bildirim";
