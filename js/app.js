@@ -2879,7 +2879,8 @@ function surumRozetleri() {
 async function surumKontrol() {
   if (location.protocol === "file:") return;
   try {
-    const r = await fetch("js/surum.js", { cache: "no-store" });
+    /* soru işaretli adres: tarayıcı da Firebase'in önbelleği de atlansın */
+    const r = await fetch(`js/surum.js?t=${Date.now()}`, { cache: "no-store" });
     if (!r.ok) return;
     const m = /SURUM_NO\s*=\s*(\d+)/.exec(await r.text());
     if (m && +m[1] > SURUM_NO && +m[1] !== _yeniSurum) {

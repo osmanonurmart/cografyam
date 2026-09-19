@@ -24,6 +24,10 @@ Kod değiştirince sürümü artır, yoksa tarayıcı eskisini gösterir. Tek nu
 N=63; sed -i "s/?s=[0-9]*/?s=$N/g" index.html sw.js; sed -i "s/cografyam-v[0-9]*/cografyam-v$N/" sw.js; sed -i "s/SURUM_NO = [0-9]*/SURUM_NO = $N/" js/surum.js
 ```
 
+> `js/surum.js` sürüm kontrolünün okuduğu dosya: `firebase.json`'da
+> önbelleğe alınmaz ve istek adresine zaman damgası eklenir. Yoksa
+> `**/*.@(js|css)` kuralının bir yıllık önbelleği eski numarayı döndürür.
+
 Ekranda "Coğrafyam"ın yanında `vN` görünür. Uygulama açıkken yeni sürüm
 yayına çıkarsa (sunucudaki `js/surum.js` açılışta, sekmeye dönünce ve 5
 dakikada bir okunur) rozet `vN · güncelle` olur, tıklayınca yenilenir.
