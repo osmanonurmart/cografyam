@@ -893,6 +893,12 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
   background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:#fecaca;
 }
 .ice-sonuc.basarili{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35);color:#fde68a}
+.ice-cakisma{
+  margin-top:14px;padding:12px 13px;border-radius:12px;
+  background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.35);
+}
+.ice-cakisma p{margin:0;font-size:14px;font-weight:600;text-align:center}
+.ice-cakisma .modal-btnler{margin-top:12px}
 .ice-sonuc ul{margin:6px 0 0;padding-left:18px;max-height:180px;overflow-y:auto}
 .ice-sonuc li{margin:2px 0}
 .ayar-alani{display:block}

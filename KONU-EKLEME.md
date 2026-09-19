@@ -5,15 +5,31 @@ haritaya konacak objeleri ve yazılı soruları bir arada taşır.
 
 ## Akış
 
-1. Uygulamada **yeni konu** oluştur (ad önemli değil, koddan değişebilir).
-2. İçeriği hazırla — elle ya da Claude'a anlatarak (aşağıdaki şablon).
-3. **Düzenle › konu seçicinin yanındaki ⚙ › konu kartındaki ⬆ İçe aktar**.
-4. Kodu kutuya yapıştır **ya da** 📄 Dosya seç ile `.json` dosyasını seç.
-5. Konu doluysa seç: **Üstüne ekle** (var olanlar kalır) / **Hepsini değiştir**
+İki yerden içe aktarılabilir. İkisinde de kodu kutuya yapıştırabilir **ya
+da** 📄 Dosya seç ile `.json` dosyasını seçebilirsin.
+
+### Düzenle ekranının üstündeki ⬆ İçe aktar — en kolayı
+
+Önceden konu oluşturmaya gerek yok; dosyanın ne olduğunu uygulama anlar:
+
+- **Konu kodu** → koddaki `konu.ad`'a bakılır (yoksa dosya adı:
+  `gediz-grabeni.json` → "Gediz grabeni").
+  - Bu adda konu **yoksa** yeni konu oluşturulur.
+  - **Varsa** sorar: **Yeni konu** ("Ad (2)" olarak açılır) / **Üzerine yaz**
+    (objeler ve sorular silinip yenileri konur) / **İptal**.
+  - Sonra Düzenle ekranı o konuya geçer.
+- **Tüm uygulama yedeği** (`cografyam-yedek-….json`) → "her şey bununla
+  değiştirilecek" onayı sorulur, sonra geri yüklenir.
+
+### Konu ayarlarındaki ⬆ İçe aktar — açık konuya
+
+1. **Düzenle › konu seçicinin yanındaki ⚙ › konu kartındaki ⬆ İçe aktar**.
+2. Konu doluysa seç: **Üstüne ekle** (var olanlar kalır) / **Hepsini değiştir**
    (objeler ve yazılı sorular silinir; ad, simge ve ayarlar yalnızca kodda
    yazıyorsa değişir).
-6. Sorun yoksa pencere kapanır ve özet çıkar. Atlanan satır varsa pencere açık
-   kalır, hangisi olduğunu yazar — gerisi yine eklenmiştir.
+
+Her iki yolda da sorun yoksa pencere kapanır ve özet çıkar. Atlanan satır
+varsa pencere açık kalır, hangisi olduğunu yazar — gerisi yine eklenmiştir.
 
 ## Kodun iskeleti
 

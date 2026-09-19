@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=66">
+<link rel="stylesheet" href="css/style.css?s=67">
 </head>
 <body>
 
@@ -224,13 +224,12 @@
     <div class="editor-baslik">
       <div class="marka-kucuk">Düzenle</div>
       <div class="yedek-btnler">
-        <button class="metin-btn ince" id="btn-ice-aktar" title="Yedek dosyasından geri yükle">⬆ İçe aktar</button>
+        <button class="metin-btn ince" id="btn-ice-aktar" title="Konu kodu ya da tüm uygulama yedeği yükle">⬆ İçe aktar</button>
         <button class="metin-btn ince" id="btn-disa-aktar" title="Her şeyin yedeğini .json olarak indir">⬇ Dışa aktar</button>
       </div>
     </div>
     <span></span>
   </header>
-  <input type="file" id="yedek-dosya" accept="application/json,.json" hidden>
 
   <div class="editor-govde">
     <div class="editor-harita" id="editor-harita">
@@ -297,8 +296,8 @@
 
 <div class="modal gizli" id="modal-konu-ice">
   <div class="modal-kart genis-kart">
-    <h3>Konuya içe aktar</h3>
-    <p class="ortu-alt">Aldığın kodu yapıştır ya da .json dosyasını seç.</p>
+    <h3 id="ice-baslik">Konuya içe aktar</h3>
+    <p class="ortu-alt" id="ice-aciklama">Aldığın kodu yapıştır ya da .json dosyasını seç.</p>
     <textarea id="ice-metin" class="kucuk-alan ice-metin" spellcheck="false" autocomplete="off"
               placeholder='{ "objeler": [ { "ad": "Demir", "emoji": "🔩", "iller": ["Mardin", "Muğla"] } ] }'></textarea>
     <div class="ice-dosya-satir">
@@ -310,6 +309,14 @@
       <div class="secenek-satir" id="ice-mod-secim">
         <button class="secenek secili" data-deger="ekle">Üstüne ekle</button>
         <button class="secenek" data-deger="degistir">Hepsini değiştir</button>
+      </div>
+    </div>
+    <div id="ice-cakisma" class="ice-cakisma gizli">
+      <p id="ice-cakisma-yazi"></p>
+      <div class="modal-btnler">
+        <button class="ana-btn" data-cakisma="yeni">Yeni konu</button>
+        <button class="tehlike-btn" data-cakisma="uzerine">Üzerine yaz</button>
+        <button class="ikincil-btn" data-cakisma="iptal">İptal</button>
       </div>
     </div>
     <div id="ice-sonuc" class="ice-sonuc gizli"></div>
@@ -364,18 +371,18 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=66"></script>
-<script src="js/il-merkez.js?s=66"></script>
-<script src="js/komsular.js?s=66"></script>
-<script src="js/hazir-icerik.js?s=66"></script>
+<script src="js/harita-turkiye.js?s=67"></script>
+<script src="js/il-merkez.js?s=67"></script>
+<script src="js/komsular.js?s=67"></script>
+<script src="js/hazir-icerik.js?s=67"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/surum.js?s=66"></script>
-<script src="js/firebase-config.js?s=66"></script>
-<script src="js/data.js?s=66"></script>
-<script src="js/app.js?s=66"></script>
-<script src="js/bulut.js?s=66"></script>
-<script src="js/editor.js?s=66"></script>
-<script src="js/konu-duzen.js?s=66"></script>
+<script src="js/surum.js?s=67"></script>
+<script src="js/firebase-config.js?s=67"></script>
+<script src="js/data.js?s=67"></script>
+<script src="js/app.js?s=67"></script>
+<script src="js/bulut.js?s=67"></script>
+<script src="js/editor.js?s=67"></script>
+<script src="js/konu-duzen.js?s=67"></script>
 </body>
 </html>

@@ -726,13 +726,14 @@ function yedegiDisaAktar() {
   bildir(`Yedek indirildi — ${durum.kutuphane.length} konu, ${palet.gorseller.length} görsel (${kb} KB)`);
 }
 
-async function yedegiIceAktar(dosya) {
-  if (!dosya) return;
-  let yedek;
-  try { yedek = JSON.parse(await dosya.text()); }
-  catch (e) { bildir("Dosya okunamadı — geçerli bir JSON değil"); return; }
+function yedekMi(veri) {
+  return !!(veri && veri.uygulama === "cografyam" && veri.veri);
+}
 
-  if (!yedek || yedek.uygulama !== "cografyam" || !yedek.veri) {
+/* Tüm uygulama yedeğini geri yükler (onay sorar). Düzenle › İçe aktar
+   penceresi okunmuş yedeği buraya verir; konu kodlarını kendisi işler. */
+async function yedegiIceAktar(yedek) {
+  if (!yedekMi(yedek)) {
     bildir("Bu dosya bir Coğrafyam yedeği değil");
     return;
   }

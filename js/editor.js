@@ -1160,12 +1160,8 @@ function editorOlaylari() {
   });
 
   $("#btn-disa-aktar").addEventListener("click", yedegiDisaAktar);
-  $("#btn-ice-aktar").addEventListener("click", () => $("#yedek-dosya").click());
-  $("#yedek-dosya").addEventListener("change", async e => {
-    const dosya = e.target.files && e.target.files[0];
-    e.target.value = "";
-    await yedegiIceAktar(dosya);
-  });
+  /* konu kodu ya da tüm uygulama yedeği — hangisi olduğu içeride anlaşılır */
+  $("#btn-ice-aktar").addEventListener("click", () => konuIceAc(null));
 
   document.addEventListener("keydown", e => {
     if (!$("#ekran-editor").classList.contains("aktif")) return;
