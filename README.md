@@ -16,10 +16,17 @@ git push                                # GitHub Pages
 firebase deploy --only firestore:rules  # kurallar değiştiyse
 ```
 
-Kod değiştirince **iki yerde** sürüm artır, yoksa tarayıcı eskisini gösterir:
+Kod değiştirince sürümü artır, yoksa tarayıcı eskisini gösterir. Tek numara
+üç yerde duruyor (`index.html` `?s=`, `sw.js` `SURUM` ve `?s=`,
+`js/surum.js` `SURUM_NO`) — hepsini birden artırmak için (N = yeni numara):
 
-1. `index.html` içindeki `?s=44` → `?s=45` (9 yerde)
-2. `sw.js` içindeki `SURUM` **ve** `DOSYALAR` listesindeki `?s=44`
+```bash
+N=63; sed -i "s/?s=[0-9]*/?s=$N/g" index.html sw.js; sed -i "s/cografyam-v[0-9]*/cografyam-v$N/" sw.js; sed -i "s/SURUM_NO = [0-9]*/SURUM_NO = $N/" js/surum.js
+```
+
+Ekranda "Coğrafyam"ın yanında `vN` görünür. Uygulama açıkken yeni sürüm
+yayına çıkarsa (sunucudaki `js/surum.js` açılışta, sekmeye dönünce ve 5
+dakikada bir okunur) rozet `vN · güncelle` olur, tıklayınca yenilenir.
 
 > `firebase.json` ignore listesinde hem `**/.*` hem `**/.*/**` olmalı.
 > Yalnızca ilki varsa `.git` klasörünün içi yayına çıkar.

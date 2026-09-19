@@ -2818,10 +2818,67 @@ function bulutDurumu(bagli) {
 /* Herkes düzenleyebilir — giriş olmadığı için rol ayrımı yok */
 function adminMi() { return true; }
 
+/* ---- sürüm rozeti ----
+   Her girişte en yeni sürüm zaten yüklenir (index.html önbelleğe alınmaz,
+   service worker önce ağa gider). Rozet, uygulama AÇIKKEN yayına yeni
+   sürüm çıkarsa bunu gösterir: sunucudaki js/surum.js okunur, numara
+   büyükse "v63 · güncelle" olur ve tıklayınca sayfa yenilenir. */
+let _yeniSurum = 0;
+
+function surumRozetleri() {
+  $$("[data-surum]").forEach(b => {
+    const yeni = _yeniSurum > SURUM_NO;
+    b.innerHTML = yeni
+      ? `v${_yeniSurum}<span class="uzun"> · güncelle</span><span class="kisa"> ↻</span>`
+      : `v${SURUM_NO}`;
+    b.classList.toggle("yeni", yeni);
+    b.title = yeni ? "Yeni sürüm var — tıkla, yenilensin" : "Güncel sürüm";
+  });
+}
+
+async function surumKontrol() {
+  if (location.protocol === "file:") return;
+  try {
+    const r = await fetch("js/surum.js", { cache: "no-store" });
+    if (!r.ok) return;
+    const m = /SURUM_NO\s*=\s*(\d+)/.exec(await r.text());
+    if (m && +m[1] > SURUM_NO && +m[1] !== _yeniSurum) {
+      _yeniSurum = +m[1];
+      surumRozetleri();
+    }
+  } catch (e) { /* çevrimdışı: sessizce geç */ }
+}
+
+async function surumTiklandi() {
+  if (_yeniSurum <= SURUM_NO) {
+    await surumKontrol();
+    if (_yeniSurum <= SURUM_NO) { bildir(`En güncel sürüm: v${SURUM_NO}`); return; }
+  }
+  ilerlemeKaydet();
+  /* bekleyen bulut gönderimi (800 ms gecikmeli) yenilemede kaybolmasın */
+  if (typeof Bulut !== "undefined" && Bulut._bekleyen && Bulut._bekleyen.size) {
+    clearTimeout(Bulut._zaman);
+    await Bulut._gonder();
+  }
+  try {
+    const kayit = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
+    if (kayit) await kayit.update();
+  } catch (e) { /* yenileme yine de yeni dosyaları ağdan alır */ }
+  location.reload();
+}
+
 function baslat() {
   durum.profiller = [{ id: ORTAK_KIMLIK, ad: "Coğrafyam", avatar: "🙂", renk: RENKLER[0], rol: "admin" }];
   durum.aktifProfilId = ORTAK_KIMLIK;
   olaylariBagla();
+
+  surumRozetleri();
+  $$("[data-surum]").forEach(b => b.addEventListener("click", surumTiklandi));
+  setTimeout(surumKontrol, 4000);
+  setInterval(surumKontrol, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") surumKontrol();
+  });
 
   if (location.protocol !== "file:" && "serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch(() => {});

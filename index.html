@@ -11,14 +11,14 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=60">
+<link rel="stylesheet" href="css/style.css?s=63">
 </head>
 <body>
 
 <!-- ============ PROFİL EKRANI ============ -->
 <section class="ekran aktif" id="ekran-acilis">
   <div class="profil-sahne">
-    <h1 class="marka">Coğrafya<span>m</span></h1>
+    <h1 class="marka">Coğrafya<span>m</span><button class="surum-rozet" data-surum></button></h1>
     <p class="marka-alt">Coğrafyayı haritaya bakarak çalış</p>
     <div class="giris-kutu"><div class="yukleniyor"></div></div>
     <p class="giris-alt kucuk" id="giris-yerel-not"></p>
@@ -32,6 +32,7 @@
       <button class="marka-blok" id="btn-istatistik" title="İstatistikleri gör">
         <div class="marka-kucuk">Coğrafya<span>m</span></div>
       </button>
+      <button class="surum-rozet" data-surum></button>
       <span class="marka-ayrac" aria-hidden="true"></span>
       <a class="marka-blok kart-kutusu" id="btn-kart-kutusu"
          href="https://osmanonurmart.github.io/kart-kutusu/" target="_blank" rel="noopener noreferrer"
@@ -363,17 +364,18 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=60"></script>
-<script src="js/il-merkez.js?s=60"></script>
-<script src="js/komsular.js?s=60"></script>
-<script src="js/hazir-icerik.js?s=60"></script>
+<script src="js/harita-turkiye.js?s=63"></script>
+<script src="js/il-merkez.js?s=63"></script>
+<script src="js/komsular.js?s=63"></script>
+<script src="js/hazir-icerik.js?s=63"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/firebase-config.js?s=60"></script>
-<script src="js/data.js?s=60"></script>
-<script src="js/app.js?s=60"></script>
-<script src="js/bulut.js?s=60"></script>
-<script src="js/editor.js?s=60"></script>
-<script src="js/konu-duzen.js?s=60"></script>
+<script src="js/surum.js?s=63"></script>
+<script src="js/firebase-config.js?s=63"></script>
+<script src="js/data.js?s=63"></script>
+<script src="js/app.js?s=63"></script>
+<script src="js/bulut.js?s=63"></script>
+<script src="js/editor.js?s=63"></script>
+<script src="js/konu-duzen.js?s=63"></script>
 </body>
 </html>
