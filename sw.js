@@ -2,27 +2,28 @@
    Strateji: ÖNCE AĞ, olmazsa önbellek.
    Böylece dosyaları her güncellediğimizde tarayıcı en yeni sürümü alır;
    internet yoksa son indirilen sürümle çalışmaya devam eder. */
-const SURUM = "cografyam-v58";
+const SURUM = "cografyam-v59";
 
 const DOSYALAR = [
   "./",
   "./index.html",
-  "./css/style.css?s=57",
-  "./js/harita-turkiye.js?s=57",
-  "./js/il-merkez.js?s=57",
-  "./js/komsular.js?s=57",
-  "./js/hazir-icerik.js?s=57",
+  "./css/style.css?s=58",
+  "./js/harita-turkiye.js?s=58",
+  "./js/il-merkez.js?s=58",
+  "./js/komsular.js?s=58",
+  "./js/hazir-icerik.js?s=58",
   "./js/vendor/firebase-app-compat.js",
   "./js/vendor/firebase-firestore-compat.js",
-  "./js/firebase-config.js?s=57",
-  "./js/data.js?s=57",
-  "./js/app.js?s=57",
-  "./js/bulut.js?s=57",
-  "./js/editor.js?s=57",
-  "./js/konu-duzen.js?s=57",
+  "./js/firebase-config.js?s=58",
+  "./js/data.js?s=58",
+  "./js/app.js?s=58",
+  "./js/bulut.js?s=58",
+  "./js/editor.js?s=58",
+  "./js/konu-duzen.js?s=58",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./icons/apple-touch-icon.png"
 ];
 
 self.addEventListener("install", ev => {
