@@ -97,6 +97,41 @@ Her il için ayrı bir obje, il yazısının yanına konur. Aynı ile birden faz
 düşerse etrafa dağıtılır. Beğenmezsen Düzenle ekranında sürükleyebilirsin —
 sürüklemek cevabı bozmaz, doğru cevap koordinata değil ile bakar.
 
+## Alan ve çizgi objeleri
+
+Dağ, ova, havza (alan) ya da akarsu, fay hattı (çizgi) gibi şekiller.
+
+```json
+{ "tip": "alan", "ad": "Bozdağlar", "renk": "#22c55e", "saydamlik": 0.6,
+  "noktalar": [[104.2, 243.1], [108.9, 240.6], …] }
+```
+
+| Alan | Ne yapar | Not |
+|---|---|---|
+| `tip` | `alan` ya da `cizgi` | Yoksa emoji obje sayılır |
+| `noktalar` | Şeklin köşeleri, `[x, y]` | Alan en az 3, çizgi en az 2 nokta |
+| `renk` | Dolgu/çizgi rengi | `#22c55e` biçiminde. Yoksa mavi |
+| `desen` | `duz` · `cizgili` · `tarali` · `noktali` · `dalgali` · `tugla` · `igne` | Yalnızca alanda |
+| `saydamlik` | 0–1 arası | Varsayılan 0.45 |
+| `kalinlik` | Kenar/çizgi kalınlığı | Alan 1.4, çizgi 3 |
+| `iller` | Cevap illeri | Yazılmazsa şeklin geçtiği iller hesaplanır |
+| `sorular` | Kendi soru metnin | Yoksa *Hangisi Bozdağlar?* |
+
+**`noktalar` enlem-boylam değildir**, uygulamanın harita koordinatıdır
+(x 0–1007, y 0–527). Uygulamanın haritası stilize bir çizim olduğu için gerçek
+koordinat basit bir formülle doğru yere düşmüyor — Ege'de 25 birime kadar
+kayıyor. Noktaları Claude dışarıda hazırlar:
+
+- **Ders kitabı haritasından:** Resimdeki Türkiye sınırı uygulamanın haritasına
+  otomatik oturtulur, renkli lekeler izlenip taşınır. Sonuç kitaptakinin
+  kopyasıdır. (Kırık Dağlar böyle yapıldı.)
+- **Gerçek araziden:** Yükselti verisinden şekil çıkarılır, il sınırlarına
+  göre haritaya esnetilir. Coğrafi olarak daha doğru, kitaptan farklı görünebilir.
+
+Aynı adı taşıyan birden fazla alan tek soru olur (ör. parçalı bir dağ).
+Cevap birimi `alan` ise alana tıklanarak cevaplanır. Şekli beğenmezsen
+Düzenle ekranında noktaları sürükleyebilirsin.
+
 ## `sorular` (yazılı sorular)
 
 Haritaya obje koymadan sorulan sorular. Cevap haritada il ya da bölgeye

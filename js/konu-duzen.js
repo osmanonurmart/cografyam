@@ -377,7 +377,9 @@ function konuDuzenOlaylari() {
      "ayar":  { "cevapBirimi", "ilIsimleri", "ilSinirlari", "hayalet",
                 "objeGorunur", "objeAdlari", "birikmesin" },
      "objeler": [ { "ad", "emoji", "iller": ["Mardin", "Balıkesir/Bigadiç"],
-                    "ilce", "cerceve", "ekGoster", "boyut", "sorular": ["…"] } ],
+                    "ilce", "cerceve", "ekGoster", "boyut", "sorular": ["…"] },
+                  { "tip": "alan" | "cizgi", "ad", "noktalar": [[x, y], …],
+                    "renk", "desen", "saydamlik", "kalinlik", "iller", "sorular" } ],
      "sorular": [ { "metin", "il" | "iller" | "bolge" } ]
    }
    Her il ayrı bir seçim birimi olur ama aynı adı taşıdıkları için tek
@@ -481,6 +483,11 @@ function iceHazirla(veri) {
     if (!o || typeof o !== "object") return;
     const ad = String(o.ad || "").trim();
     const etiket = ad || `${sira + 1}. obje`;
+    if (o.tip === "alan" || o.tip === "cizgi") {
+      const obje = iceSekilHazirla(o, ad, etiket, hatalar);
+      if (obje) sonuc.objeler.push(obje);
+      return;
+    }
     const cerceve = o.cerceve ? iceCerceveBul(o.cerceve) : null;
     if (cerceve === undefined) hatalar.push(`${etiket}: çerçeve "${o.cerceve}" tanınmadı, çerçevesiz eklendi`);
     const sorular = iceMetinler(o.sorular || o.soru).map(metin => ({ metin }));
@@ -528,6 +535,80 @@ function iceHazirla(veri) {
   });
 
   return { sonuc, hatalar };
+}
+
+/* Alan ve çizgi objeleri: "noktalar" uygulamanın harita koordinatlarıdır
+   (SVG viewBox birimi), enlem/boylam değil. Harita stilize olduğu için
+   gerçek koordinat basit bir formülle doğru yere düşmüyor (Ege'de 25
+   birime kadar kayıyor); dönüşüm içe aktarmadan önce dışarıda yapılır. */
+const ICE_DESENLER = ["duz", "cizgili", "tarali", "noktali", "dalgali", "tugla", "igne"];
+
+function iceSekilHazirla(o, ad, etiket, hatalar) {
+  const alanMi = o.tip === "alan";
+  const noktalar = (Array.isArray(o.noktalar) ? o.noktalar : [])
+    .filter(n => Array.isArray(n) && n.length >= 2 && Number.isFinite(+n[0]) && Number.isFinite(+n[1]))
+    .map(n => [+(+n[0]).toFixed(1), +(+n[1]).toFixed(1)]);
+  const enAz = alanMi ? 3 : 2;
+  if (noktalar.length < enAz) {
+    hatalar.push(`${etiket}: ${alanMi ? "alan" : "çizgi"} için en az ${enAz} nokta gerekiyor, atlandı`);
+    return null;
+  }
+  if (noktalar.some(([x, y]) => x < -100 || x > 1150 || y < -100 || y > 650)) {
+    hatalar.push(`${etiket}: noktalar haritanın dışında (x 0–1007, y 0–527 olmalı), atlandı`);
+    return null;
+  }
+
+  /* iller: kodda yazıyorsa o, yoksa şeklin geçtiği iller hesaplanır */
+  let iller = [];
+  const yazilan = [...iceListe(o.iller), ...iceListe(o.il)];
+  if (yazilan.length) {
+    yazilan.forEach(a => {
+      const il = iceIlBul(a);
+      if (!il) hatalar.push(`${etiket}: "${a}" diye bir il yok`);
+      else if (!iller.includes(il)) iller.push(il);
+    });
+  } else {
+    const h = iceHaritasi();
+    iller = alanMi ? alaninIlleri(h, noktalar) : cizgininIlleri(h, noktalar);
+  }
+
+  let renk = CIZGI_RENKLERI[0];
+  if (o.renk !== undefined) {
+    if (/^#[0-9a-f]{6}$/i.test(o.renk)) renk = o.renk;
+    else hatalar.push(`${etiket}: renk "${o.renk}" tanınmadı, varsayılan kullanıldı`);
+  }
+  let desen = "duz";
+  if (o.desen !== undefined) {
+    const d = ICE_DESENLER.find(x => iceKatla(x) === iceKatla(o.desen));
+    if (d) desen = d;
+    else hatalar.push(`${etiket}: desen "${o.desen}" tanınmadı (${ICE_DESENLER.join(", ")})`);
+  }
+  const saydamlik = Number(o.saydamlik);
+  const kalinlik = Number(o.kalinlik);
+
+  return {
+    id: yeniId(), tip: o.tip, emoji: alanMi ? "⬛" : "〰️", gorselId: null,
+    ad, iller, ilce: "", cerceve: null, ekGoster: o.ekGoster !== false,
+    x: null, y: null, boyut: 2, aci: 0,
+    noktalar, renk, desen,
+    kalinlik: kalinlik > 0 ? kalinlik : (alanMi ? 1.4 : 3),
+    saydamlik: saydamlik >= 0 && saydamlik <= 1 ? saydamlik : 0.45,
+    baloncuklar: [],
+    sorular: iceMetinler(o.sorular || o.soru).map(metin => ({ metin }))
+  };
+}
+
+/* İl bulmak için gerçek bir harita gerekir (isPointInFill): sayfaya bağlı
+   ama ekran dışında, bir kez kurulup tekrar kullanılır. */
+let _iceHarita = null;
+function iceHaritasi() {
+  if (_iceHarita) return _iceHarita;
+  const kutu = document.createElement("div");
+  kutu.style.cssText = "position:fixed;left:-10000px;top:0;width:400px;height:220px;visibility:hidden;pointer-events:none";
+  kutu.setAttribute("aria-hidden", "true");
+  document.body.appendChild(kutu);
+  _iceHarita = new Harita(kutu);
+  return _iceHarita;
 }
 
 function konuIceAc(konu) {
@@ -584,9 +665,15 @@ function konuIceUygula() {
   $("#konu-ayar-sec").value = konu.id;
   konuAyarEkraniCiz();
 
-  const iller = new Set(sonuc.objeler.map(o => o.iller[0])).size;
-  const ozet = `${sonuc.objeler.length} obje (${iller} il), ${sonuc.sorular.length} yazılı soru ` +
-               (degistir ? "ile konu yenilendi" : "eklendi");
+  const isaretler = sonuc.objeler.filter(o => o.tip === "emoji");
+  const alanlar = sonuc.objeler.filter(o => o.tip === "alan").length;
+  const cizgiler = sonuc.objeler.filter(o => o.tip === "cizgi").length;
+  const parcalar = [];
+  if (isaretler.length) parcalar.push(`${isaretler.length} obje (${new Set(isaretler.map(o => o.iller[0])).size} il)`);
+  if (alanlar) parcalar.push(`${alanlar} alan`);
+  if (cizgiler) parcalar.push(`${cizgiler} çizgi`);
+  parcalar.push(`${sonuc.sorular.length} yazılı soru`);
+  const ozet = parcalar.join(", ") + " " + (degistir ? "ile konu yenilendi" : "eklendi");
   if (!hatalar.length) { iceKapat(); bildir(ozet, 3200); return; }
 
   /* uyarı varsa pencere açık kalsın ki hangi satırın atlandığı görülsün */
