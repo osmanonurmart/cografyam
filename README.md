@@ -83,6 +83,12 @@ açılış çalışmazdı.
   Silmede `request.resource` null olduğu için içine alan denetimi koyulursa
   kural değerlendirilemez ve silme sessizce reddedilir. `create, update` ile
   `delete` ayrı yazılmalı — bu tuzağa bir kez düşüldü.
+- **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
+  `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
+  `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette
+  gönderildiği için tek bir iç içe dizi bütün paketi düşürür ve o andan
+  sonraki hiçbir değişiklik buluta ulaşmaz ("Buluta gönderilemedi").
+  Konuya yeni bir dizi-içinde-dizi alanı eklenirse ikisine de eklenmeli.
 - **Buluta bir kez sızan bozuk kayıt her yerden geri gelir.** Yerel aynalar
   onu tutar, bulut boşalınca geri yüklenir. `COP_KAYITLAR` kara listesi bunun
   içindir. Ayrıca eksik alan (renk, ikon) uygulamayı çökertmemeli — `karart`

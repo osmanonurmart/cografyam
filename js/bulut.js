@@ -91,7 +91,7 @@ const Bulut = {
     const ekle = d => this._dinleyiciler.push(d);
 
     ekle(this._db.collection("konular").onSnapshot(s => {
-      const konular = s.docs.map(d => Object.assign({ id: d.id }, d.data()));
+      const konular = s.docs.map(d => konuBuluttan(Object.assign({ id: d.id }, d.data())));
       konular.sort((a, b) => (a.sira || 0) - (b.sira || 0));
       if (this._bosBulutuYoksay("kutuphane", konular)) return;
       this._yerelYaz("kutuphane", konular);
@@ -188,7 +188,7 @@ const Bulut = {
   },
 
   _anahtariGonder(anahtar) {
-    if (anahtar === "kutuphane")  return this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []));
+    if (anahtar === "kutuphane")  return this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []).map(konuBuluta));
     // kara listedeki kayıt yereldeyse buluta geri gönderilmesin
     if (anahtar === "ustKonular") return this._koleksiyonEsitle("ustKonular",
       Depo.oku("ustKonular", []).filter(u => !COP_KAYITLAR.includes(u.id)));
@@ -220,7 +220,7 @@ const Bulut = {
   },
 
   async tumIcerigiGonder(sessiz) {
-    await this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []));
+    await this._koleksiyonEsitle("konular", Depo.oku("kutuphane", []).map(konuBuluta));
     await this._koleksiyonEsitle("ustKonular", Depo.oku("ustKonular", []));
     const p = Depo.oku("palet", {});
     await this._koleksiyonEsitle("gorseller", (p.gorseller || []).map(g => ({ id: g.id, ad: g.ad, veri: g.veri })));
@@ -230,6 +230,32 @@ const Bulut = {
     if (!sessiz) bildir("İçerik buluta yüklendi");
   }
 };
+
+/* Firestore iç içe diziyi kabul etmez ("Nested arrays are not supported").
+   Alan ve çizgilerin noktaları [[x, y], …] olduğu için buluta düz dizi
+   [x1, y1, x2, y2, …] olarak gider, gelirken çiftlere geri döner.
+   Konular tek pakette gönderildiğinden tek bir alan bile bütün paketi
+   düşürüyordu — o andan sonraki hiçbir değişiklik buluta ulaşmıyordu. */
+function konuBuluta(konu) {
+  if (!konu || !Array.isArray(konu.objeler)) return konu;
+  return Object.assign({}, konu, {
+    objeler: konu.objeler.map(o => Array.isArray(o.noktalar)
+      ? Object.assign({}, o, { noktalar: o.noktalar.flat() })
+      : o)
+  });
+}
+
+function konuBuluttan(konu) {
+  if (!konu || !Array.isArray(konu.objeler)) return konu;
+  konu.objeler.forEach(o => {
+    const n = o.noktalar;
+    if (!Array.isArray(n) || !n.length || Array.isArray(n[0])) return;   // boş ya da zaten çift
+    const ciftler = [];
+    for (let i = 0; i + 1 < n.length; i += 2) ciftler.push([n[i], n[i + 1]]);
+    o.noktalar = ciftler;
+  });
+  return konu;
+}
 
 /* İçerik koleksiyonları: [yerel anahtar, Firestore koleksiyonu] */
 const ICERIK_KOLEKSIYONLARI = [["kutuphane", "konular"], ["ustKonular", "ustKonular"], ["palet", "gorseller"]];
