@@ -2864,7 +2864,18 @@ async function surumTiklandi() {
     const kayit = navigator.serviceWorker && await navigator.serviceWorker.getRegistration();
     if (kayit) await kayit.update();
   } catch (e) { /* yenileme yine de yeni dosyaları ağdan alır */ }
+  try { sessionStorage.setItem(ONEK + "oncekiSurum", String(SURUM_NO)); } catch (e) {}
   location.reload();
+}
+
+/* Rozetle güncellendiyse yenilemeden sonra haber ver */
+function surumGuncellendiMi() {
+  let onceki = 0;
+  try {
+    onceki = +sessionStorage.getItem(ONEK + "oncekiSurum") || 0;
+    sessionStorage.removeItem(ONEK + "oncekiSurum");
+  } catch (e) { return; }
+  if (onceki && SURUM_NO > onceki) setTimeout(() => bildir(`v${SURUM_NO} yüklendi`, 3200), 900);
 }
 
 function baslat() {
@@ -2873,6 +2884,7 @@ function baslat() {
   olaylariBagla();
 
   surumRozetleri();
+  surumGuncellendiMi();
   $$("[data-surum]").forEach(b => b.addEventListener("click", surumTiklandi));
   setTimeout(surumKontrol, 4000);
   setInterval(surumKontrol, 5 * 60 * 1000);
