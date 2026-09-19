@@ -2,25 +2,25 @@
    Strateji: ÖNCE AĞ, olmazsa önbellek.
    Böylece dosyaları her güncellediğimizde tarayıcı en yeni sürümü alır;
    internet yoksa son indirilen sürümle çalışmaya devam eder. */
-const SURUM = "cografyam-v64";
+const SURUM = "cografyam-v65";
 
 const DOSYALAR = [
   "./",
   "./index.html",
-  "./css/style.css?s=64",
-  "./js/harita-turkiye.js?s=64",
-  "./js/il-merkez.js?s=64",
-  "./js/komsular.js?s=64",
-  "./js/hazir-icerik.js?s=64",
+  "./css/style.css?s=65",
+  "./js/harita-turkiye.js?s=65",
+  "./js/il-merkez.js?s=65",
+  "./js/komsular.js?s=65",
+  "./js/hazir-icerik.js?s=65",
   "./js/vendor/firebase-app-compat.js",
   "./js/vendor/firebase-firestore-compat.js",
-  "./js/surum.js?s=64",
-  "./js/firebase-config.js?s=64",
-  "./js/data.js?s=64",
-  "./js/app.js?s=64",
-  "./js/bulut.js?s=64",
-  "./js/editor.js?s=64",
-  "./js/konu-duzen.js?s=64",
+  "./js/surum.js?s=65",
+  "./js/firebase-config.js?s=65",
+  "./js/data.js?s=65",
+  "./js/app.js?s=65",
+  "./js/bulut.js?s=65",
+  "./js/editor.js?s=65",
+  "./js/konu-duzen.js?s=65",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

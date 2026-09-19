@@ -428,19 +428,19 @@ g#guney-kibris,g#kuzey-kibris{display:none}
   .skor-sutun{grid-row:1;grid-column:4;align-self:center;margin-right:max(12px,env(safe-area-inset-right))}
   .ilerleme-cizgi{position:relative;grid-row:1;grid-column:1/-1;align-self:end;bottom:-1px}
 
-  .harita-alan{grid-row:2;grid-column:1/-1;padding:4px 8px}
+  /* harita alta dayalı: Hatay ekranın alt kenarına değer (viewBox: mobilDuzen) */
+  .harita-alan{grid-row:2;grid-column:1/-1;padding:0 8px}
 
-  /* köşe düğmeleri haritanın üstünde yüzer */
-  #btn-geri,#btn-pas,#btn-durdur,#btn-devam{
-    grid-row:2;grid-column:1/-1;align-self:end;z-index:5;
-    width:52px;height:46px;margin-bottom:max(10px,env(safe-area-inset-bottom));
+  /* Geri ve Pas Karadeniz'in üstünde yüzer; yerlerini mobilDuzen() hesaplar */
+  #btn-geri,#btn-pas{
+    position:absolute;left:10px;top:70px;z-index:5;
+    width:52px;height:46px;
     background:rgba(20,30,50,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
     box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
-  #btn-geri{justify-self:start;margin-left:max(10px,env(safe-area-inset-left))}
-  #btn-pas{justify-self:start;margin-left:calc(max(10px,env(safe-area-inset-left)) + 60px)}
-  #btn-devam{justify-self:end;margin-right:max(10px,env(safe-area-inset-right))}
-  #btn-durdur{justify-self:end;margin-right:calc(max(10px,env(safe-area-inset-right)) + 60px)}
+  #btn-pas{left:70px}
+  /* ilerleme her cevapta kaydedildiği için telefonda duraklatmaya gerek yok */
+  #btn-durdur,#btn-devam{display:none}
 }
 
 /* mobil: satırda 3 konu */

@@ -1003,6 +1003,7 @@ class Harita {
     if (gk) gk.classList.add("pasif-alan");
 
     // çevre ülke/deniz adlarına yer açmak için çerçeveyi genişlet
+    this.temel = HARITA_VIEWBOX;
     this.svg.setAttribute("viewBox", HARITA_VIEWBOX);
     this.svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
@@ -1497,21 +1498,27 @@ class Harita {
      viewBox'ı değiştirir; svgNokta() getScreenCTM kullandığı için
      yakınlaştırılmış haldeyken de tıklama koordinatları doğru kalır. */
   gorunumAl() {
-    const v = (this.svg.getAttribute("viewBox") || HARITA_VIEWBOX).split(/[\s,]+/).map(Number);
+    const v = (this.svg.getAttribute("viewBox") || this.temel).split(/[\s,]+/).map(Number);
     return { x: v[0], y: v[1], en: v[2], boy: v[3] };
   }
   gorunumYaz(g) {
     this.svg.setAttribute("viewBox", `${g.x} ${g.y} ${g.en} ${g.boy}`);
   }
   gorunumSifirla() {
-    this.svg.setAttribute("viewBox", HARITA_VIEWBOX);
+    this.svg.setAttribute("viewBox", this.temel);
   }
   tamGorunumMu() {
-    return (this.svg.getAttribute("viewBox") || "") === HARITA_VIEWBOX;
+    return (this.svg.getAttribute("viewBox") || "") === this.temel;
+  }
+  /* Temel çerçeveyi değiştirir (yatay telefonda sıkı çerçeve, alta dayalı) */
+  temelAyarla(viewBox, oran) {
+    this.temel = viewBox;
+    this.svg.setAttribute("viewBox", viewBox);
+    this.svg.setAttribute("preserveAspectRatio", oran);
   }
   /* çapa noktası (SVG koordinatı) sabit kalacak şekilde ölçekler */
   yakinlastir(carpan, capa) {
-    const tam = HARITA_VIEWBOX.split(/[\s,]+/).map(Number);
+    const tam = this.temel.split(/[\s,]+/).map(Number);
     const g = this.gorunumAl();
     // 1x'ten uzağa, 25x'ten yakına gitmesin
     const yeniEn = Math.min(tam[2], Math.max(tam[2] / 25, g.en / carpan));
@@ -1868,6 +1875,51 @@ function haritaZoomOlaylari(harita) {
   window.addEventListener("pointerup", bitir);
 }
 
+/* ---- yatay telefon düzeni ----
+   Harita kenar boşluksuz, alta dayalı çizilir: Hatay'ın güney ucu
+   (y 442.8) ekranın alt kenarına değer, Türkiye'nin tamamı görünür.
+   Geri ve Pas Karadeniz'in üstünde durur; yerleri harita koordinatından
+   hesaplanır, telefon dönünce ya da boyut değişince yeniden yerleşir.
+   Durdur/Devam bu düzende gizli (CSS) — ilerleme zaten her cevapta kaydedilir. */
+const MOBIL_YATAY = "(orientation: landscape) and (max-height: 500px)";
+const MOBIL_VIEWBOX = "-1 -1 1010 445";
+const DENIZ_DUGMELERI = {           // [x, o hizadaki Karadeniz kıyısının y'si]
+  "btn-geri": [240, 72.5],          // Sakarya–Düzce açıkları
+  "btn-pas":  [650, 86.3]           // Ordu–Giresun açıkları
+};
+
+function mobilDuzen() {
+  if (!calismaHarita) return;
+  const mobil = matchMedia(MOBIL_YATAY).matches;
+  const vb = mobil ? MOBIL_VIEWBOX : HARITA_VIEWBOX;
+  if (calismaHarita.temel !== vb) calismaHarita.temelAyarla(vb, mobil ? "xMidYMax meet" : "xMidYMid meet");
+
+  Object.keys(DENIZ_DUGMELERI).forEach(id => { const b = $("#" + id); b.style.left = b.style.top = ""; });
+  if (!mobil || !$("#ekran-calisma").classList.contains("aktif")) return;
+  if (!calismaHarita.tamGorunumMu()) return;       // yakınlaştırılmışken yerinde kalsın
+
+  const ekran = $("#ekran-calisma").getBoundingClientRect();
+  const alan = $("#harita-alan").getBoundingClientRect();
+  const svg = calismaHarita.svg, ctm = svg.getScreenCTM();
+  if (!ctm) return;
+  const n = svg.createSVGPoint();
+  Object.entries(DENIZ_DUGMELERI).forEach(([id, [x, kiyi]]) => {
+    const b = $("#" + id);
+    n.x = x; n.y = kiyi;
+    const s = n.matrixTransform(ctm);
+    // düğmenin altı kıyının hemen üstünde; deniz dar kalırsa harita kenarına yaslanır
+    const ust = Math.max(alan.top + 4, s.y - b.offsetHeight - 6);
+    b.style.left = (s.x - b.offsetWidth / 2 - ekran.left) + "px";
+    b.style.top = (ust - ekran.top) + "px";
+  });
+}
+
+let _mobilZaman = null;
+window.addEventListener("resize", () => {
+  clearTimeout(_mobilZaman);
+  _mobilZaman = setTimeout(mobilDuzen, 120);
+});
+
 function haritayiHazirla() {
   if (calismaHarita) return calismaHarita;
   calismaHarita = new Harita($("#harita-alan"));
@@ -1936,6 +1988,7 @@ function konuyuBaslat(konu) {
   $("#ortu-bitis").classList.add("gizli");
   ekranGoster("calisma");
   soruyuGoster();
+  requestAnimationFrame(mobilDuzen);          // ekran göründükten sonra ölçülebilir
 
   if (kayit && !bitmis && kayit.index > 0) bildir("Kaldığın yerden devam");
 }
