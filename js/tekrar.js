@@ -2,23 +2,25 @@
    Coğrafyam — Günlük Tekrar
 
    Bütün konulardaki soruları hedef tarihe kadar tekrar ettirir.
-   Bir soru "bilindi" sayılmak için İKİ KEZ ÜST ÜSTE doğru bilinmeli;
+   Bir soru "öğrenildi" sayılmak için İKİ KEZ ÜST ÜSTE doğru bilinmeli;
    aynı soru aynı gün ikinci kez sorulmaz, böylece ikinci doğru başka
    bir güne düşer ve bilgi kalıcı olur.
 
-   Günlük kota = kalan iş / kalan gün. Kalan iş, her sorunun eksik
-   doğru sayısının toplamıdır. Kota günün ilk açılışında sabitlenir;
-   gün içinde konu eklensen bile kota oynamaz, ertesi gün yeniden
-   hesaplanır.
+   Öğrenilen soru havuzdan çıkmaz, SEYRELİR: TEKRAR_HATIRLATMA gün
+   sonra hatırlatma olarak bir kez gelir. Yine doğruysa süre yeniden
+   başlar, yanlışsa soru öğrenme havuzuna geri döner.
 
-   Durum `ayarlar.tekrar` içinde tutulur (buluta ayarlarla birlikte gider):
-     { hedef: "2026-10-01", gun: "2026-09-20", kota: 40, cozulen: 12,
-       kartlar: { "<konuId>::<soru metni>": { d: 0-2, g: "2026-09-20" } } }
+   Günlük kota = kalan iş / kalan gün. Kalan iş, öğrenilmemiş soruların
+   eksik doğru sayısının toplamıdır. Kota günün ilk açılışında sabitlenir.
+
+   Durum KİŞİYE ÖZEL: ayarlar.tekrar[profilId] içinde durur.
+     { hedef, gun, kota, cozulen, kartlar: { "<konuId>::<soru>": {d, g} } }
    ========================================================== */
 
 const TEKRAR_HEDEF = "2026-10-01";     // ilk dönemin bitişi
 const TEKRAR_DONEM_GUN = 14;           // hedef geçince yeni dönem uzunluğu
-const TEKRAR_BILME = 2;                // kaç kez üst üste doğru = bilindi
+const TEKRAR_BILME = 2;                // kaç kez üst üste doğru = öğrenildi
+const TEKRAR_HATIRLATMA = 5;           // öğrenilen soru kaç gün sonra hatırlatılsın
 
 function tekrarBugun() { return new Date().toLocaleDateString("sv"); }
 
@@ -32,10 +34,17 @@ function tekrarGunEkle(gun, adet) {
   return t.toLocaleDateString("sv");
 }
 
-/* Durumu okur; dönem bittiyse yeni dönem başlatır, yeni günde kotayı kurar */
+/* Aktif profilin durumu; dönem bittiyse yeni dönem, yeni günde yeni kota */
 function tekrarDurum() {
   const a = durum.ayarlar;
-  const t = a.tekrar = Object.assign({ hedef: TEKRAR_HEDEF, gun: "", kota: 0, cozulen: 0, kartlar: {} }, a.tekrar || {});
+  if (!a.tekrar) a.tekrar = {};
+  if (a.tekrar.kartlar) {                                      // profiller öncesi biçim
+    const ilk = durum.profiller[0] && durum.profiller[0].id;
+    a.tekrar = ilk ? { [ilk]: a.tekrar } : {};
+  }
+  const kimlik = durum.aktifProfilId || ORTAK_KIMLIK;
+  const t = a.tekrar[kimlik] = Object.assign(
+    { hedef: TEKRAR_HEDEF, gun: "", kota: 0, cozulen: 0, kartlar: {} }, a.tekrar[kimlik] || {});
   if (!t.kartlar || typeof t.kartlar !== "object") t.kartlar = {};
   const bugun = tekrarBugun();
 
@@ -67,21 +76,32 @@ function tekrarHavuzu(t) {
   return liste;
 }
 
+function tekrarOgrenildiMi(kart) { return kart.d >= TEKRAR_BILME; }
+
+/* Öğrenilen soru hatırlatma zamanı geldi mi? */
+function tekrarHatirlatmaMi(kart, bugun) {
+  return tekrarOgrenildiMi(kart) && kart.g && tekrarGunFarki(kart.g, bugun) >= TEKRAR_HATIRLATMA;
+}
+
 function tekrarKotaHesapla(t) {
   const havuz = tekrarHavuzu(t);
   const kalanIs = havuz.reduce((top, x) => top + Math.max(0, TEKRAR_BILME - x.kart.d), 0);
   const kalanGun = Math.max(1, tekrarGunFarki(tekrarBugun(), t.hedef) + 1);
-  return Math.min(kalanIs, Math.ceil(kalanIs / kalanGun));
+  return Math.max(kalanIs ? 1 : 0, Math.min(kalanIs, Math.ceil(kalanIs / kalanGun)));
 }
 
-/* Öncelik: önce yanlış/pas geçtiklerin, sonra hiç sorulmamışlar,
-   en son bir kez doğru bildiklerin (ikinci tur). Aynı gün sorulan gelmez. */
+/* Öncelik: yanlış/pas > hiç sorulmamış > bir kez doğru > hatırlatma.
+   Aynı gün sorulmuş soru gelmez. */
 function tekrarSecim(t, adet) {
   if (adet <= 0) return [];
   const bugun = tekrarBugun();
-  const gruplar = [[], [], []];
+  const gruplar = [[], [], [], []];
   tekrarHavuzu(t).forEach(x => {
-    if (x.kart.d >= TEKRAR_BILME || x.kart.g === bugun) return;
+    if (x.kart.g === bugun) return;
+    if (tekrarOgrenildiMi(x.kart)) {
+      if (tekrarHatirlatmaMi(x.kart, bugun)) gruplar[3].push(x);
+      return;
+    }
     gruplar[x.kart.g ? (x.kart.d === 0 ? 0 : 2) : 1].push(x);
   });
   gruplar.forEach(g => {
@@ -90,7 +110,12 @@ function tekrarSecim(t, adet) {
       [g[i], g[j]] = [g[j], g[i]];
     }
   });
-  const secilen = [...gruplar[0], ...gruplar[1], ...gruplar[2]].slice(0, adet);
+  /* kotanın bir kısmı hatırlatmalara ayrılır; yoksa öğrenilenler hiç
+     gelmezdi (öğrenilmemiş soru bitene kadar sıra onlara gelmiyordu) */
+  const hatirlatma = gruplar[3];
+  const pay = Math.min(hatirlatma.length, Math.max(1, Math.round(adet * 0.2)));
+  const yeniler = [].concat(gruplar[0], gruplar[1], gruplar[2]).slice(0, adet - pay);
+  const secilen = yeniler.concat(hatirlatma.slice(0, adet - yeniler.length));
   /* konu konu gidilsin: harita daha az değişsin */
   const sira = new Map(durum.kutuphane.map((k, i) => [k.id, i]));
   secilen.sort((a, b) => sira.get(a.konu.id) - sira.get(b.konu.id));
@@ -99,32 +124,114 @@ function tekrarSecim(t, adet) {
 
 function tekrarKalanBugun(t) { return Math.max(0, (t.kota || 0) - (t.cozulen || 0)); }
 
-/* ---------------- ana ekran kartı ---------------- */
+/* Konu başına öğrenme tablosu — durum ekranı ve zayıf konular için */
+function tekrarKonuOzeti(t) {
+  const bugun = tekrarBugun();
+  const konular = new Map();
+  tekrarHavuzu(t).forEach(x => {
+    const k = konular.get(x.konu.id) ||
+      { konu: x.konu, toplam: 0, ogrenilen: 0, baslanan: 0, hatirlatma: 0 };
+    k.toplam++;
+    if (tekrarOgrenildiMi(x.kart)) k.ogrenilen++;
+    else if (x.kart.d > 0) k.baslanan++;
+    if (tekrarHatirlatmaMi(x.kart, bugun)) k.hatirlatma++;
+    konular.set(x.konu.id, k);
+  });
+  return [...konular.values()].map(k =>
+    Object.assign(k, { yuzde: k.toplam ? Math.round(100 * k.ogrenilen / k.toplam) : 0 }));
+}
+
+/* ---------------- ana ekran kartı (konu kutuları gibi) ---------------- */
 function tekrarKarti() {
   const t = tekrarDurum();
   const havuz = tekrarHavuzu(t);
   if (!havuz.length) return null;
 
   const kalan = tekrarKalanBugun(t);
-  const bilinen = havuz.filter(x => x.kart.d >= TEKRAR_BILME).length;
-  const kalanGun = Math.max(0, tekrarGunFarki(tekrarBugun(), t.hedef));
-  const yuzde = t.kota ? Math.min(100, Math.round(100 * (t.cozulen || 0) / t.kota)) : 100;
-  const hedefYazi = new Date(t.hedef + "T00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  const ogrenilen = havuz.filter(x => tekrarOgrenildiMi(x.kart)).length;
+  const yuzde = Math.round(100 * ogrenilen / havuz.length);
 
-  const el = document.createElement("button");
-  el.className = "tekrar-kart" + (kalan ? "" : " bitti");
-  el.innerHTML = `
-    <span class="tk-ikon">${kalan ? "🔁" : "✅"}</span>
-    <span class="tk-yazi">
-      <span class="tk-ad">Günlük Tekrar</span>
-      <span class="tk-alt">${kalan
-        ? `bugün ${kalan} soru kaldı · ${t.cozulen || 0}/${t.kota}`
-        : `bugünlük tamam · ${t.cozulen || 0} soru`} · ${hedefYazi}'e ${kalanGun} gün</span>
-      <span class="tk-cubuk"><span style="width:${yuzde}%"></span></span>
-      <span class="tk-alt ince">${bilinen}/${havuz.length} soru öğrenildi</span>
-    </span>`;
-  el.addEventListener("click", () => tekrarBaslat(false));
-  return el;
+  const cevre = 2 * Math.PI * 13;
+  const kutu = document.createElement("div");
+  kutu.className = "konu-kutu tekrar-kutu" + (kalan ? "" : " bitti");
+  kutu.style.setProperty("--k1", "#0ea5e9");
+  kutu.style.setProperty("--k2", karart("#0ea5e9", 0.45));
+  kutu.innerHTML = `
+    <div class="k-emoji">${kalan ? "🔁" : "✅"}</div>
+    <div class="k-ad">Günlük Tekrar</div>
+    <div class="k-eylem">
+      <button class="k-durum" title="${kalan ? `Bugün ${kalan} soru` : "Bugünlük tamam"}">
+        <svg class="k-halka" viewBox="0 0 32 32" aria-hidden="true">
+          <circle class="halka-zemin" cx="16" cy="16" r="13"></circle>
+          <circle class="halka-dolu" cx="16" cy="16" r="13"
+                  stroke-dasharray="${(yuzde / 100) * cevre} ${cevre}"></circle>
+        </svg>
+        <span class="k-simge">${kalan ? kalan : "✓"}</span>
+      </button>
+    </div>`;
+  kutu.addEventListener("click", tekrarEkraniAc);
+  return kutu;
+}
+
+/* ---------------- durum ekranı ---------------- */
+function tekrarEkraniAc() {
+  tekrarEkraniCiz();
+  ekranGoster("tekrar");
+}
+
+function tekrarEkraniCiz() {
+  const t = tekrarDurum();
+  const havuz = tekrarHavuzu(t);
+  const ogrenilen = havuz.filter(x => tekrarOgrenildiMi(x.kart)).length;
+  const baslanan = havuz.filter(x => !tekrarOgrenildiMi(x.kart) && x.kart.d > 0).length;
+  const yuzde = havuz.length ? Math.round(100 * ogrenilen / havuz.length) : 0;
+  const kalan = tekrarKalanBugun(t);
+  const kalanGun = Math.max(0, tekrarGunFarki(tekrarBugun(), t.hedef));
+  const hedefYazi = new Date(t.hedef + "T00:00").toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  const konular = tekrarKonuOzeti(t).sort((a, b) => a.yuzde - b.yuzde || b.toplam - a.toplam);
+  const zayif = konular.filter(k => k.yuzde < 100).slice(0, 3);
+  const p = aktifProfil();
+
+  $("#tekrar-govde").innerHTML = `
+    <div class="tekrar-ust">
+      <div class="tekrar-halka" style="--y:${yuzde}">
+        <span>%${yuzde}</span>
+      </div>
+      <div class="tekrar-ozet">
+        <div class="tekrar-baslik">${p ? guvenli(p.avatar + " " + p.ad) : "Günlük Tekrar"}</div>
+        <div class="tekrar-alt">${ogrenilen}/${havuz.length} soru öğrenildi · ${baslanan} soru yolda</div>
+        <div class="tekrar-alt">${hedefYazi}'e ${kalanGun} gün · bugün ${t.cozulen || 0}/${t.kota || 0} soru</div>
+      </div>
+    </div>
+
+    <button class="ana-btn tam" id="btn-tekrar-basla">
+      ${kalan ? `Bugünü çalış — ${kalan} soru` : "Fazladan çalış"}
+    </button>
+
+    ${zayif.length ? `
+      <h2 class="bolum-baslik">En zayıf konular</h2>
+      <div class="tekrar-liste">
+        ${zayif.map(k => tekrarSatiri(k, true)).join("")}
+      </div>` : ""}
+
+    <h2 class="bolum-baslik">Tüm konular</h2>
+    <div class="tekrar-liste">
+      ${konular.map(k => tekrarSatiri(k, false)).join("")}
+    </div>`;
+
+  $("#btn-tekrar-basla").addEventListener("click", () => tekrarBaslat(tekrarKalanBugun(t) === 0));
+}
+
+function tekrarSatiri(k, vurgu) {
+  return `
+    <div class="tekrar-satir${vurgu ? " zayif" : ""}">
+      <span class="ts-ikon">${guvenli(k.konu.ikon)}</span>
+      <span class="ts-yazi">
+        <span class="ts-ad">${guvenli(k.konu.ad)}</span>
+        <span class="ts-cubuk"><span style="width:${k.yuzde}%;background:${guvenli(k.konu.renk)}"></span></span>
+      </span>
+      <span class="ts-sayi">%${k.yuzde}<small>${k.ogrenilen}/${k.toplam}</small></span>
+    </div>`;
 }
 
 /* ---------------- çalışma ---------------- */
@@ -136,7 +243,7 @@ function tekrarBaslat(devam) {
 
   const secilen = tekrarSecim(t, adet);
   if (!secilen.length) {
-    bildir(devam ? "Bugün sorulabilecek soru kalmadı — yarın devam" : "Bugünkü tekrar tamam");
+    bildir("Bugün sorulabilecek soru kalmadı — yarın devam");
     return;
   }
 
@@ -151,7 +258,7 @@ function tekrarBaslat(devam) {
   durum.duraklatildi = false;
   durum.hayaletGecici = [];
 
-  const h = haritayiHazirla();
+  haritayiHazirla();
   tekrarHaritaKonusu = null;
   $("#ortu-duraklat").classList.add("gizli");
   $("#ortu-bitis").classList.add("gizli");
@@ -176,7 +283,8 @@ function tekrarKonuyuHazirla(soru) {
   $("#calisma-konu").textContent = "🔁 " + konu.ad;
 }
 
-/* Cevap sonucu: doğru bilinen sayaç ilerler, yanlış/pas sıfırlar */
+/* Cevap sonucu: doğru bilinen sayaç ilerler, yanlış/pas sıfırlar.
+   Öğrenilmiş soru hatırlatmada doğruysa sayaç aynı kalır, süresi uzar. */
 function tekrarSonucYaz(soru, basarili) {
   if (!soru || !soru._tekrarAnahtar) return;
   const t = tekrarDurum();
@@ -193,13 +301,13 @@ function tekrarBitis() {
   const s = sayilar(durum.sonuclar);
   const kalan = tekrarKalanBugun(t);
   const havuz = tekrarHavuzu(t);
-  const bilinen = havuz.filter(x => x.kart.d >= TEKRAR_BILME).length;
+  const ogrenilen = havuz.filter(x => tekrarOgrenildiMi(x.kart)).length;
   const baskaVar = tekrarSecim(t, 1).length > 0;
 
   $("#bitis-ozet").textContent =
     `${durum.sorular.length} soru: ${s.dogru} doğru, ${s.yanlis} yanlış, ${s.pas} pas. ` +
     (kalan ? `Bugün ${kalan} soru kaldı.` : "Bugünkü tekrar tamam.") +
-    ` Öğrenilen: ${bilinen}/${havuz.length}.`;
+    ` Öğrenilen: ${ogrenilen}/${havuz.length}.`;
   const btn = $("#btn-bastan");
   btn.textContent = kalan ? "Devam et →" : "Fazladan çalış →";
   btn.classList.toggle("gizli", !baskaVar);
@@ -214,4 +322,8 @@ function tekrarDevamEt() {
   const t = tekrarDurum();
   $("#ortu-bitis").classList.add("gizli");
   tekrarBaslat(tekrarKalanBugun(t) === 0);
+}
+
+function tekrarOlaylari() {
+  $("#btn-tekrar-cik").addEventListener("click", () => anaEkranaGec());
 }

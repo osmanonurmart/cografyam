@@ -853,6 +853,59 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
   border:2px dashed var(--mavi);border-radius:12px;background:rgba(59,130,246,.08);
 }
 
+/* ================= PROFİLLER ================= */
+.profil-rozet{
+  width:36px;height:36px;border-radius:50%;font-size:19px;line-height:1;flex:none;
+  display:grid;place-items:center;border:2px solid var(--p1,#64748b);
+  background:color-mix(in srgb,var(--p1,#64748b) 24%,var(--panel));
+}
+.profil-rozet:hover{filter:brightness(1.15)}
+.profil-govde{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;flex:1}
+.profil-listesi{display:flex;flex-wrap:wrap;gap:22px;justify-content:center}
+.profil-kutu{position:relative;display:flex;flex-direction:column;align-items:center;gap:9px;width:110px}
+.profil-yuz{
+  width:92px;height:92px;border-radius:22px;font-size:44px;line-height:1;display:grid;place-items:center;
+  background:linear-gradient(160deg,var(--p1,#334155),var(--p2,#1e293b));
+  border:2px solid rgba(255,255,255,.14);transition:transform .15s ease,box-shadow .15s ease;
+}
+.profil-yuz:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(0,0,0,.45)}
+.profil-yuz.ekle{background:var(--panel);border-style:dashed;color:var(--sonuk);font-size:34px}
+.profil-kutu.secili .profil-yuz{border-color:#fff}
+.profil-ad{font-size:14.5px;font-weight:700;text-align:center}
+.profil-kalem{
+  position:absolute;top:-6px;right:2px;width:28px;height:28px;border-radius:50%;font-size:13px;
+  background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;opacity:.85;
+}
+.profil-kalem:hover{opacity:1}
+
+/* ================= GÜNLÜK TEKRAR DURUM EKRANI ================= */
+.tekrar-ust{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.tekrar-halka{
+  width:92px;height:92px;flex:none;border-radius:50%;display:grid;place-items:center;
+  background:conic-gradient(var(--mavi) calc(var(--y) * 1%),rgba(255,255,255,.08) 0);
+}
+.tekrar-halka span{
+  width:72px;height:72px;border-radius:50%;background:var(--bg);display:grid;place-items:center;
+  font-size:19px;font-weight:800;
+}
+.tekrar-ozet{min-width:0}
+.tekrar-baslik{font-size:19px;font-weight:800;margin-bottom:4px}
+.tekrar-alt{font-size:13px;color:var(--sonuk);line-height:1.6}
+.tekrar-liste{display:flex;flex-direction:column;gap:8px}
+.tekrar-satir{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--line);
+}
+.tekrar-satir.zayif{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.08)}
+.ts-ikon{font-size:20px;line-height:1;flex:none}
+.ts-yazi{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.ts-ad{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ts-cubuk{height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.ts-cubuk span{display:block;height:100%;border-radius:999px}
+.ts-sayi{flex:none;font-size:13.5px;font-weight:750;text-align:right;line-height:1.3}
+.ts-sayi small{display:block;font-size:11px;font-weight:600;color:var(--sonuk)}
+.tekrar-kutu .k-simge{font-size:12.5px;font-weight:800}
+
 /* ================= GÜNLÜK TEKRAR KARTI ================= */
 .tekrar-kart{
   display:flex;align-items:center;gap:14px;width:100%;margin-bottom:14px;

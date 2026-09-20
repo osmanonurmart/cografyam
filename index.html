@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=69">
+<link rel="stylesheet" href="css/style.css?s=70">
 </head>
 <body>
 
@@ -47,6 +47,7 @@
       </a>
     </div>
     <div class="ust-sag">
+      <button class="profil-rozet" id="btn-profil" title="Profil değiştir">👤</button>
       <button class="ikon-btn kucuk" id="btn-ayarlar" title="Ayarlar">⚙</button>
     </div>
   </header>
@@ -64,6 +65,29 @@
     </div>
   </main>
   <p class="dipnot alt-sabit">Lodos Digital ürünüdür</p>
+</section>
+
+<!-- ============ PROFİL SEÇİMİ ============ -->
+<section class="ekran" id="ekran-profil-sec">
+  <header class="ust-bar">
+    <button class="ikon-btn" id="btn-profil-sec-cik">←</button>
+    <div class="marka-kucuk">Kim çalışıyor?</div>
+    <span></span>
+  </header>
+  <main class="ana-govde dar profil-govde">
+    <div class="profil-listesi" id="profil-listesi"></div>
+    <p class="giris-alt kucuk">Konular herkeste ortak; ilerleme, istatistik ve günlük tekrar kişiye özeldir.</p>
+  </main>
+</section>
+
+<!-- ============ GÜNLÜK TEKRAR DURUMU ============ -->
+<section class="ekran" id="ekran-tekrar">
+  <header class="ust-bar">
+    <button class="ikon-btn" id="btn-tekrar-cik">←</button>
+    <div class="marka-kucuk">Günlük Tekrar</div>
+    <span></span>
+  </header>
+  <main class="ana-govde dar" id="tekrar-govde"></main>
 </section>
 
 <!-- ============ ÇALIŞMA EKRANI ============ -->
@@ -294,6 +318,23 @@
   </div>
 </div>
 
+<div class="modal gizli" id="modal-profil">
+  <div class="modal-kart">
+    <h3 id="profil-duzen-baslik">Profili düzenle</h3>
+    <label class="alan-etiket">Ad</label>
+    <input type="text" id="profil-ad-alan" class="kucuk-alan" maxlength="16" placeholder="Örn. Osman" autocomplete="off">
+    <label class="alan-etiket">Karakter</label>
+    <div class="secim-satir" id="profil-karakter-secim"></div>
+    <label class="alan-etiket">Renk</label>
+    <div class="secim-satir" id="profil-renk-secim"></div>
+    <div class="modal-btnler">
+      <button class="ana-btn" id="btn-profil-kaydet">Kaydet</button>
+      <button class="ikincil-btn" id="btn-profil-iptal">İptal</button>
+      <button class="tehlike-btn gizli" id="btn-profil-sil">Sil</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal gizli" id="modal-konu-ice">
   <div class="modal-kart genis-kart">
     <h3 id="ice-baslik">Konuya içe aktar</h3>
@@ -371,19 +412,20 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=69"></script>
-<script src="js/il-merkez.js?s=69"></script>
-<script src="js/komsular.js?s=69"></script>
-<script src="js/hazir-icerik.js?s=69"></script>
+<script src="js/harita-turkiye.js?s=70"></script>
+<script src="js/il-merkez.js?s=70"></script>
+<script src="js/komsular.js?s=70"></script>
+<script src="js/hazir-icerik.js?s=70"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/surum.js?s=69"></script>
-<script src="js/firebase-config.js?s=69"></script>
-<script src="js/data.js?s=69"></script>
-<script src="js/app.js?s=69"></script>
-<script src="js/bulut.js?s=69"></script>
-<script src="js/editor.js?s=69"></script>
-<script src="js/konu-duzen.js?s=69"></script>
-<script src="js/tekrar.js?s=69"></script>
+<script src="js/surum.js?s=70"></script>
+<script src="js/firebase-config.js?s=70"></script>
+<script src="js/data.js?s=70"></script>
+<script src="js/app.js?s=70"></script>
+<script src="js/bulut.js?s=70"></script>
+<script src="js/editor.js?s=70"></script>
+<script src="js/konu-duzen.js?s=70"></script>
+<script src="js/profil.js?s=70"></script>
+<script src="js/tekrar.js?s=70"></script>
 </body>
 </html>

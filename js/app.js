@@ -793,7 +793,11 @@ function aktifProfil() {
 ---------------------------------------------------------- */
 function ilerlemeOku(konuId) {
   const tum = Depo.oku("ilerleme", {});
-  return (tum[durum.aktifProfilId] || {})[konuId] || null;
+  const kayit = (tum[durum.aktifProfilId] || {})[konuId];
+  if (kayit) return kayit;
+  // profiller öncesindeki kayıtlar ilk profilin sayılır
+  if (eskiKayitlarBuProfilde()) return (tum[ORTAK_KIMLIK] || {})[konuId] || null;
+  return null;
 }
 
 function ilerlemeYaz(konuId, kayit) {
@@ -835,10 +839,21 @@ function gunlukEkle(dogruMu) {
   Depo.yaz("gunluk", tum);
 }
 
-function bugunkuOzet() {
+/* Profilin günlük sayaçları; ilk profile eski ortak kayıtlar da eklenir */
+function gunlukKayitlari() {
   const tum = Depo.oku("gunluk", {});
   const p = tum[durum.aktifProfilId] || {};
-  return p[bugununAnahtari()] || { soru: 0, dogru: 0 };
+  if (!eskiKayitlarBuProfilde()) return p;
+  const birlesik = Object.assign({}, tum[ORTAK_KIMLIK] || {});
+  Object.entries(p).forEach(([g, v]) => {
+    const e = birlesik[g] || { soru: 0, dogru: 0 };
+    birlesik[g] = { soru: e.soru + v.soru, dogru: e.dogru + v.dogru };
+  });
+  return birlesik;
+}
+
+function bugunkuOzet() {
+  return gunlukKayitlari()[bugununAnahtari()] || { soru: 0, dogru: 0 };
 }
 
 function ozetiCiz() {
@@ -866,7 +881,7 @@ function gunEkle(anahtar, gun) {
 }
 
 function istatistikleriTopla() {
-  const gunluk = (Depo.oku("gunluk", {})[durum.aktifProfilId]) || {};
+  const gunluk = gunlukKayitlari();
   const bugun = bugununAnahtari();
 
   let toplamSoru = 0, toplamDogru = 0, haftaSoru = 0, haftaDogru = 0;
@@ -1663,8 +1678,8 @@ function objeKonum(objeler, obje) {
    ANA EKRAN
    ========================================================== */
 function anaEkranaGec() {
-  const p = aktifProfil();
-  if (!p) return;
+  if (!aktifProfil()) { profilSecimAc(); return; }
+  profilAvatariCiz();
   ozetiCiz();
   konulariCiz();
   durum.ekranGecmisi = [];
@@ -1675,8 +1690,13 @@ function konulariCiz() {
   const grid = $("#konu-grid");
   grid.innerHTML = "";
 
-  const tekrar = tekrarKarti();              // günlük tekrar en üstte
-  if (tekrar) grid.appendChild(tekrar);
+  const tekrar = tekrarKarti();              // günlük tekrar en üstte, konu kutusu boyutunda
+  if (tekrar) {
+    const kap = document.createElement("div");
+    kap.className = "serbest-govde";
+    kap.appendChild(tekrar);
+    grid.appendChild(kap);
+  }
 
   const ogeler = anaEkranOgeleri();
   if (!ogeler.length) {
@@ -2794,6 +2814,8 @@ function olaylariBagla() {
 
   editorOlaylari();
   konuDuzenOlaylari();
+  profilOlaylari();
+  tekrarOlaylari();
 
   document.addEventListener("keydown", e => {
     if (!$("#ekran-calisma").classList.contains("aktif")) return;
@@ -2824,10 +2846,12 @@ const ORTAK_KIMLIK = "ortak";
 
 function bulutHazir() {
   ayarlariYukle();
+  profilleriYukle();
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
   bulutDurumu(Bulut.bagli);
+  if (!aktifProfil()) { profilSecimAc(); return; }
   anaEkranaGec();
 }
 
@@ -2835,7 +2859,12 @@ function bulutHazir() {
 function bulutVerisiGeldi(anahtar) {
   if (typeof Bulut === "undefined" || !Bulut.hazir) return;
 
-  if (anahtar === "ayarlar") ayarlariYukle();
+  if (anahtar === "ayarlar") {
+    ayarlariYukle();
+    if (Array.isArray(durum.ayarlar.profiller)) durum.profiller = durum.ayarlar.profiller;
+    profilAvatariCiz();
+    if (($("section.ekran.aktif") || {}).id === "ekran-profil-sec") profilSecimCiz();
+  }
   if (anahtar === "palet") paletYukle();
   if (anahtar === "kutuphane") durum.kutuphane = konulariTamamla(Depo.oku("kutuphane", []));
   if (anahtar === "ustKonular") durum.ustKonular = Depo.oku("ustKonular", []);
@@ -2937,8 +2966,6 @@ function surumGuncellendiMi() {
 }
 
 function baslat() {
-  durum.profiller = [{ id: ORTAK_KIMLIK, ad: "Coğrafyam", avatar: "🙂", renk: RENKLER[0], rol: "admin" }];
-  durum.aktifProfilId = ORTAK_KIMLIK;
   olaylariBagla();
 
   surumRozetleri();
@@ -2966,10 +2993,12 @@ function baslat() {
 
 function yerelKipeDus() {
   ayarlariYukle();
+  profilleriYukle();
   paletYukle();
   kutuphaneYukle();
   ustKonulariYukle();
   bulutDurumu(false);
+  if (!aktifProfil()) { profilSecimAc(); return; }
   anaEkranaGec();
 }
 

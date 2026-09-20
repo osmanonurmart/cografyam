@@ -94,6 +94,15 @@ açılış çalışmazdı.
   Silmede `request.resource` null olduğu için içine alan denetimi koyulursa
   kural değerlendirilemez ve silme sessizce reddedilir. `create, update` ile
   `delete` ayrı yazılmalı — bu tuzağa bir kez düşüldü.
+- **Profiller şifresiz.** Liste `ayarlar.profiller` içinde (buluta gider),
+  seçili profil `aktifProfil` anahtarında ve YALNIZCA o cihazda kalır.
+  Profiller öncesi tek kullanıcılı kayıtlar (`ilerleme`/`gunluk` içindeki
+  `ortak`) taşınmaz — taşıma bulut snapshot'ıyla yarışıp geri alınıyordu;
+  onun yerine ilk profil okurken onlara da bakar (`eskiKayitlarBuProfilde`).
+- **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. Bir soru iki kez
+  üst üste doğru bilinince öğrenilmiş sayılır, aynı gün ikinci kez sorulmaz;
+  öğrenilenler 5 gün sonra hatırlatma olarak döner ve günlük kotanın ~%20'si
+  onlara ayrılır (yoksa öğrenilmemişler bitene dek hiç gelmezlerdi).
 - **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
   `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
   `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette
