@@ -1371,6 +1371,11 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .kart-altlik{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:9px}
 .metin-btn.tehlike{color:#fca5a5}
 
+/* ana ekran sürükleyerek sıralama */
+.konu-kutu.suruklenen,.ust-kutu.suruklenen{opacity:.25}
+.sira-hayalet{box-shadow:0 18px 40px rgba(0,0,0,.55);cursor:grabbing;transition:none}
+.konu-grid .konu-kutu:not(.sabit),.konu-grid .ust-baslik{touch-action:pan-y}
+
 .kart-ekle-satir{display:flex;gap:7px;margin-bottom:10px}
 .kart-ekle-satir>button{flex:1;min-width:0;white-space:nowrap}
 

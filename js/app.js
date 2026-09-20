@@ -1705,14 +1705,6 @@ function konulariCiz() {
   const grid = $("#konu-grid");
   grid.innerHTML = "";
 
-  const tekrar = tekrarKarti();              // günlük tekrar en üstte, konu kutusu boyutunda
-  if (tekrar) {
-    const kap = document.createElement("div");
-    kap.className = "serbest-govde";
-    kap.appendChild(tekrar);
-    grid.appendChild(kap);
-  }
-
   const ogeler = anaEkranOgeleri();
   if (!ogeler.length) {
     grid.innerHTML = `<p class="bos-uyari">Henüz konu yok. <b>Ayarlar › Konu Ayarları</b>'ndan ya da düzenleme ekranlarından yeni konu ekleyebilirsin.</p>`;
@@ -1720,16 +1712,23 @@ function konulariCiz() {
   }
 
   let serbestKap = null;   // arka arkaya gelen kapsayıcısız konular tek ızgarada toplanır
+  const serbestAl = () => {
+    if (!serbestKap) {
+      serbestKap = document.createElement("div");
+      serbestKap.className = "serbest-govde";
+      grid.appendChild(serbestKap);
+    }
+    return serbestKap;
+  };
   const serbestBitir = () => { serbestKap = null; };
+
+  /* Günlük tekrar ilk hücrede ve sabit: sürüklenmez, önüne bırakılamaz. */
+  const tekrar = tekrarKarti();
+  if (tekrar) { tekrar.classList.add("sabit"); serbestAl().appendChild(tekrar); }
 
   ogeler.forEach(oge => {
     if (oge.tip === "konu") {
-      if (!serbestKap) {
-        serbestKap = document.createElement("div");
-        serbestKap.className = "serbest-govde";
-        grid.appendChild(serbestKap);
-      }
-      serbestKap.appendChild(konuKutusu(oge.konu));
+      serbestAl().appendChild(konuKutusu(oge.konu));
       return;
     }
 
@@ -1739,6 +1738,7 @@ function konulariCiz() {
 
     const kap = document.createElement("section");
     kap.className = "ust-kutu";
+    kap.dataset.ust = u.id;
     kap.style.setProperty("--u1", u.renk);
     kap.style.setProperty("--u2", karart(u.renk, 0.42));
     kap.innerHTML = `
@@ -1757,6 +1757,152 @@ function konulariCiz() {
     }
     grid.appendChild(kap);
   });
+
+  siralamaOlaylari(grid);
+}
+
+/* ----------------------------------------------------------
+   ANA EKRAN SIRALAMASI — basılı tut, sürükle, iki kutunun arasına bırak
+
+   Tıklamayla karışmasın diye sürükleme 250 ms basılı tutunca başlar
+   (ya da o süre dolmadan 8 birimden fazla kayarsa iptal olur: sayfayı
+   kaydırıyorsundur). Sürükleme başladıktan sonraki tıklama yutulur.
+
+   Taşıma yalnızca AYNI kapsayıcı içinde: serbest konular kendi
+   ızgarasında, üst kutunun içindekiler o kutuda. Üst kutuların kendisi
+   de serbest konularla aynı sırada yer aldığı için birlikte sıralanır.
+   "Günlük Tekrar" (.sabit) ne sürüklenir ne de önüne bırakılır.
+---------------------------------------------------------- */
+let siraSurukle = null;
+
+function siralamaKapsayici(el) {
+  return el.closest(".ust-govde") || el.closest(".serbest-govde") || null;
+}
+
+/* Kapsayıcıdaki taşınabilir kardeşler — sabit kart sayılmaz. */
+function siraKardesler(kap) {
+  return [...kap.children].filter(c => !c.classList.contains("sabit"));
+}
+
+function siralamaOlaylari(grid) {
+  if (grid.dataset.siraBagli === "1") return;   // liste her çizimde yenilenir, dinleyici bir kez
+  grid.dataset.siraBagli = "1";
+
+  grid.addEventListener("pointerdown", ev => {
+    if (ev.button !== 0 && ev.pointerType === "mouse") return;
+    const kutu = ev.target.closest(".konu-kutu, .ust-kutu");
+    if (!kutu || kutu.classList.contains("sabit")) return;
+    if (ev.target.closest(".k-sifirla")) return;
+    /* Üst kutu yalnızca başlığından sürüklenir; gövdesi içindeki
+       konuların kendi sürüklemesi var. */
+    if (kutu.classList.contains("ust-kutu") && !ev.target.closest(".ust-baslik")) return;
+
+    const kap = kutu.parentElement;
+    if (!kap || siraKardesler(kap).length < 2) return;
+
+    const bas = { x: ev.clientX, y: ev.clientY };
+    siraSurukle = { kutu, kap, bas, hazir: false, tasindi: false, zaman: null };
+    siraSurukle.zaman = setTimeout(() => siraSuruklemeBaslat(ev), 250);
+  });
+
+  grid.addEventListener("pointermove", ev => {
+    const d = siraSurukle;
+    if (!d) return;
+    if (!d.hazir) {
+      if (Math.hypot(ev.clientX - d.bas.x, ev.clientY - d.bas.y) > 8) siraBitir(false);
+      return;
+    }
+    ev.preventDefault();
+    d.tasindi = true;
+    d.hayalet.style.transform =
+      `translate(${ev.clientX - d.kaydir.x}px, ${ev.clientY - d.kaydir.y}px)`;
+    siraHedefeTasi(ev.clientX, ev.clientY);
+  });
+
+  const birak = () => siraBitir(true);
+  grid.addEventListener("pointerup", birak);
+  grid.addEventListener("pointercancel", birak);
+  /* Bırakışın hemen ardından gelen tıklama konuyu açmasın. Zaman damgası
+     kullanılıyor: dokunmatikte bırakışın ardından hiç click gelmeyebilir,
+     kalıcı bayrak olsa sonraki gerçek tıklamayı yerdi. */
+  grid.addEventListener("click", ev => {
+    if (Date.now() - (+grid.dataset.tiklamaYut || 0) < 400) {
+      ev.stopPropagation(); ev.preventDefault();
+    }
+  }, true);
+}
+
+function siraSuruklemeBaslat(ev) {
+  const d = siraSurukle;
+  if (!d) return;
+  const r = d.kutu.getBoundingClientRect();
+  d.hazir = true;
+  d.kaydir = { x: ev.clientX - r.left, y: ev.clientY - r.top };
+
+  const h = d.kutu.cloneNode(true);
+  h.className = d.kutu.className + " sira-hayalet";
+  h.style.cssText = `position:fixed;left:0;top:0;width:${r.width}px;height:${r.height}px;
+    margin:0;pointer-events:none;z-index:999;opacity:.9;
+    transform:translate(${r.left}px,${r.top}px)`;
+  document.body.appendChild(h);
+  d.hayalet = h;
+  d.kutu.classList.add("suruklenen");
+  titre("dogru");
+}
+
+/* İmlecin altındaki kardeşe göre yeni yeri belirler ve canlı uygular. */
+function siraHedefeTasi(x, y) {
+  const d = siraSurukle;
+  const kardesler = siraKardesler(d.kap).filter(c => c !== d.kutu);
+  let once = null;
+  for (const c of kardesler) {
+    const r = c.getBoundingClientRect();
+    if (y < r.top - 4) { once = c; break; }                       // üst satır
+    if (y <= r.bottom + 4 && x < r.left + r.width / 2) { once = c; break; }
+  }
+  if (once) { if (once !== d.kutu.nextElementSibling) d.kap.insertBefore(d.kutu, once); }
+  else if (d.kutu !== d.kap.lastElementChild) d.kap.appendChild(d.kutu);
+}
+
+function siraBitir(uygula) {
+  const d = siraSurukle;
+  if (!d) return;
+  clearTimeout(d.zaman);
+  siraSurukle = null;
+  if (!d.hazir) return;
+  if (d.hayalet) d.hayalet.remove();
+  d.kutu.classList.remove("suruklenen");
+  if (d.tasindi) {
+    $("#konu-grid").dataset.tiklamaYut = String(Date.now());   // bırakınca konu açılmasın
+    if (uygula) siralamayiYaz();
+  }
+}
+
+/* DOM sırasını kayıtlara yazar. Serbest konular ve üst kutular tek sayaçla
+   numaralanır (ikisi ana ekranda aynı listede), üst kutunun içindekiler
+   kendi sayacıyla. */
+function siralamayiYaz() {
+  let n = 0;
+  $$("#konu-grid > *").forEach(el => {
+    if (el.classList.contains("serbest-govde")) {
+      $$(".konu-kutu", el).forEach(k => {
+        const konu = konuBul(k.dataset.konu);
+        if (konu) konu.sira = n++;
+      });
+      return;
+    }
+    if (!el.classList.contains("ust-kutu")) return;
+    const ust = ustKonuBul(el.dataset.ust);
+    if (ust) ust.sira = n++;
+    let i = 0;
+    $$(".konu-kutu", el).forEach(k => {
+      const konu = konuBul(k.dataset.konu);
+      if (konu) konu.sira = i++;
+    });
+  });
+  kutuphaneKaydet();
+  ustKonulariKaydet();
+  bildir("Sıralama kaydedildi");
 }
 
 function konuKutusu(konu) {
@@ -1779,6 +1925,7 @@ function konuKutusu(konu) {
 
   const kutu = document.createElement("div");
   kutu.className = "konu-kutu" + (toplam ? "" : " pasif") + (bitti ? " bitti" : "");
+  kutu.dataset.konu = konu.id;
   kutu.style.setProperty("--k1", konu.renk);
   kutu.style.setProperty("--k2", karart(konu.renk, 0.45));
   kutu.innerHTML = `
@@ -2331,9 +2478,15 @@ function objeyeCevapla(objeId) {
   if (!soru || !birimObjeMi(soru.birim)) return;
 
   const hedefler = soru.hedefObjeler;
+  /* Cevapta ilin de yazması objeyi ezberlerken yerini de öğretiyor:
+     "Doğru — Sivas Bakır". Konu ayarından kapatılabilir. */
   const objeAdi = (id) => {
     const o = durum.konu.objeler.find(x => x.id === id);
-    return o ? (o.ad || "(adsız)") : "?";
+    if (!o) return "?";
+    const ad = o.ad || "(adsız)";
+    if (durum.konu.ayar.ilCevapta === false) return ad;
+    const il = (o.iller || []).join(", ");
+    return il ? `${il} ${ad}` : ad;
   };
   const gb = $("#geri-bildirim");
 
@@ -2488,6 +2641,7 @@ function konuAyarIcerik(konu, hedefEl) {
     ${anahtar("Hayalet mod", "hayalet", a.hayalet && !hayaletPasif, hayaletPasif)}
     ${anahtar("Seçim birimi baştan görünsün", "objeGorunur", a.objeGorunur === "bastan")}
     ${anahtar("Cevaplananlar haritada birikmesin", "birikmesin", !!a.birikmesin)}
+    ${anahtar("Cevapta ilin adı da yazsın", "ilCevapta", a.ilCevapta !== false)}
 
     <div class="ayar-satir dikey">
       <div class="ayar-ad">Seçim birimi adları</div>
@@ -2510,7 +2664,7 @@ function konuAyarIcerik(konu, hedefEl) {
       const acik = !t.classList.contains("acik");
       t.classList.toggle("acik", acik);
       if (alan === "objeGorunur") konu.ayar.objeGorunur = acik ? "bastan" : "cevapta";
-      else if (alan === "ilSinirlari") konu.ayar.ilSinirlari = acik;
+      else if (alan === "ilSinirlari" || alan === "ilCevapta") konu.ayar[alan] = acik;
       else konu.ayar[alan] = acik;
       konuAyarUygula(konu);
     });

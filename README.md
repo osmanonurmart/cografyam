@@ -82,6 +82,14 @@ açılış çalışmazdı.
   kimlik listesi). Düzenle'de soru kartındaki *Haritadan seç* ile toplanır,
   hepsi bulunmadan soru bitmez. Şekillerin kendi kartları ve soruları
   bundan bağımsızdır.
+- **Ana ekran sıralaması** kutuyu 250 ms basılı tutup sürükleyerek değişir;
+  `sira` alanına yazılır. Taşıma yalnızca aynı kapsayıcı içinde olur ve
+  "Günlük Tekrar" (`.sabit`) ilk hücrede kalır. Bırakışın ardından 400 ms
+  boyunca tıklama yutulur — yoksa bırakınca konu açılıyordu. Dinleyiciler
+  `data-sira-bagli` ile bir kez bağlanır, liste her çizimde yenileniyor.
+- **Cevapta il adı:** obje sorusunda geri bildirim "Doğru — Sivas Bakır"
+  der; konu ayarındaki *Cevapta ilin adı da yazsın* ile kapatılır
+  (`ayar.ilCevapta`).
 - **Soru sırası** konuya girerken bir kez belirlenip ilerlemeyle saklanır: yarıda
   bırakıp dönünce aynı sıra, baştan başlayınca yeni sıra. Ayarlar › Soruları
   karıştır ile kapatılabilir.

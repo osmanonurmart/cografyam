@@ -65,6 +65,7 @@ Her bölüm isteğe bağlı. Yazılmayan her şey olduğu gibi kalır.
 | `objeGorunur` | `true` / `false` | Seçim birimi baştan görünsün |
 | `objeAdlari` | `gorunsun` · `cevapta` · `hic` | Seçim birimi adları |
 | `birikmesin` | `true` / `false` | Cevaplananlar haritada birikmesin |
+| `ilCevapta` | `true` / `false` | Cevapta ilin adı da yazsın (varsayılan açık) |
 
 `birikmesin: true` → genel Ayarlar'daki **Birikimli öğrenme** açık olsa bile bu
 konuda cevaplanan objeler ve il adları sonraki soruda kaybolur. Soruların
