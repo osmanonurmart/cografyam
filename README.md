@@ -88,6 +88,9 @@ açılış çalışmazdı.
   Yüzler `.konu-kutu` ızgarasının aynı gözünde duruyor — kartta
   `place-content:stretch` olmazsa eski kuralın `justify-content:space-between`i
   tek sütunu esnetmiyor ve yüzler sola sıkışıyor.
+  **Kart çevrikken `konulariCiz()` ertelenir** (`cevrikKonuId`/`cizimBekliyor`):
+  bulut anlık görüntüsü ana ekranı baştan çizdiği için kart tam dönerken
+  DOM'dan çıkıyor, dönüş yarıda kesilip hiç tıklanmamış gibi görünüyordu.
 - **Ana ekran sıralaması** kutuyu 250 ms basılı tutup sürükleyerek değişir;
   `sira` alanına yazılır. Taşıma yalnızca aynı kapsayıcı içinde olur ve
   "Günlük Tekrar" (`.sabit`) ilk hücrede kalır. Bırakışın ardından 400 ms

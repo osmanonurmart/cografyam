@@ -1694,6 +1694,7 @@ function objeKonum(objeler, obje) {
    ========================================================== */
 function anaEkranaGec() {
   if (!aktifProfil()) { profilSecimAc(); return; }
+  cevrikKonuId = null; cizimBekliyor = false;   // ekrana dönünce kartlar kapalı
   profilAvatariCiz();
   ozetiCiz();
   konulariCiz();
@@ -1701,8 +1702,21 @@ function anaEkranaGec() {
   ekranGoster("ana", false);
 }
 
+/* Çevrik kartın kimliği. Bulut anlık görüntüsü her geldiğinde ana ekran
+   baştan çiziliyor; kart tam dönerken DOM'dan çıkınca dönüş yarıda kesilip
+   hiç tıklanmamış gibi görünüyordu. Kart açıkken çizim erteleniyor. */
+let cevrikKonuId = null;
+let cizimBekliyor = false;
+
+function kartiKapat() {
+  cevrikKonuId = null;
+  $$("#konu-grid .konu-kutu.cevrik").forEach(k => k.classList.remove("cevrik"));
+  if (cizimBekliyor) { cizimBekliyor = false; konulariCiz(); }
+}
+
 function konulariCiz() {
   const grid = $("#konu-grid");
+  if (cevrikKonuId && grid.querySelector(".konu-kutu.cevrik")) { cizimBekliyor = true; return; }
   grid.innerHTML = "";
 
   const ogeler = anaEkranOgeleri();
@@ -1955,25 +1969,22 @@ function konuKutusu(konu) {
         <button class="kart-kapat" data-kapat aria-label="Vazgeç">✕</button>
       </div>` : ""}`;
 
+  if (cevrikKonuId === konu.id) kutu.classList.add("cevrik");
+
   kutu.addEventListener("click", ev => {
-    if (ev.target.closest("[data-kapat]"))   { kutu.classList.remove("cevrik"); return; }
-    if (ev.target.closest("[data-sifirla]")) { kutu.classList.remove("cevrik"); konuSifirla(konu); return; }
-    if (ev.target.closest("[data-devam]"))   { kutu.classList.remove("cevrik"); konuyuBaslat(konu); return; }
+    if (ev.target.closest("[data-kapat]"))   { kartiKapat(); return; }
+    if (ev.target.closest("[data-sifirla]")) { kartiKapat(); konuSifirla(konu); return; }
+    if (ev.target.closest("[data-devam]"))   { kartiKapat(); konuyuBaslat(konu); return; }
     if (!toplam) { bildir(`"${konu.ad}" konusunda henüz soru yok`); return; }
     if (cevrilir) {
       const acikti = kutu.classList.contains("cevrik");
-      kartlariKapat(kutu);
-      kutu.classList.toggle("cevrik", !acikti);
+      kartiKapat();                      // aynı anda tek kart çevrik kalsın
+      if (!acikti) { cevrikKonuId = konu.id; kutu.classList.add("cevrik"); }
       return;
     }
     konuyuBaslat(konu);
   });
   return kutu;
-}
-
-/* Aynı anda tek kart çevrik kalsın. */
-function kartlariKapat(haric) {
-  $$("#konu-grid .konu-kutu.cevrik").forEach(k => { if (k !== haric) k.classList.remove("cevrik"); });
 }
 
 function konuSifirla(konu) {
