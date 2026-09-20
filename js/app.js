@@ -756,6 +756,10 @@ async function yedegiIceAktar(yedek) {
         localStorage.removeItem(ONEK + a);
       }
     });
+    /* Açılışta bulut yereli ezmesin: bu işaret varsa yerel buluta gönderilir.
+       Yoksa geri yüklenen yedek birkaç saniye sonra buluttan gelen veriyle
+       siliniyordu (bkz. js/bulut.js _ilkYukleme). */
+    localStorage.setItem(ONEK + "yedekGeriYuklendi", "1");
   } catch (e) {
     if (kotaHatasiMi(e)) { depoDoluUyar(); return; }
     bildir("Geri yüklenemedi: " + e.message);
@@ -801,6 +805,7 @@ function ilerlemeYaz(konuId, kayit) {
 }
 
 function ilerlemeKaydet() {
+  if (durum.tekrarModu) return;              // günlük tekrar konuların ilerlemesine karışmaz
   if (!durum.konu || !durum.aktifProfilId) return;
   ilerlemeYaz(durum.konu.id, {
     index: durum.index,
@@ -1670,6 +1675,9 @@ function konulariCiz() {
   const grid = $("#konu-grid");
   grid.innerHTML = "";
 
+  const tekrar = tekrarKarti();              // günlük tekrar en üstte
+  if (tekrar) grid.appendChild(tekrar);
+
   const ogeler = anaEkranOgeleri();
   if (!ogeler.length) {
     grid.innerHTML = `<p class="bos-uyari">Henüz konu yok. <b>Ayarlar › Konu Ayarları</b>'ndan ya da düzenleme ekranlarından yeni konu ekleyebilirsin.</p>`;
@@ -1933,6 +1941,7 @@ function haritayiHazirla() {
 }
 
 function konuyuBaslat(konu) {
+  durum.tekrarModu = false;
   durum.konu = konu;
   const ham = sorulariUret(konu);
 
@@ -2094,6 +2103,7 @@ function soruyuGoster() {
 
   const soru = durum.sorular[durum.index];
   if (!soru) { bitir(); return; }
+  if (durum.tekrarModu) tekrarKonuyuHazirla(soru);   // soru başka konudaysa harita değişir
 
   $("#soru-metin").textContent = soru.metin;
   soruMetniSigdir();
@@ -2252,6 +2262,7 @@ function tekrarDene() {
 function soruyuBitir(aciklama) {
   const basarili = !durum.yanlisDenendi;
   durum.sonuclar[durum.index] = basarili ? "dogru" : "yanlis";
+  if (durum.tekrarModu) tekrarSonucYaz(durum.sorular[durum.index], basarili);
   durum.kilit = true;
   gunlukEkle(basarili);
   ses("dogru"); titre("dogru");
@@ -2340,6 +2351,7 @@ function pasGec() {
   clearTimeout(durum.zamanlayici);
   clearTimeout(durum.uyariZamani);
   durum.sonuclar[durum.index] = "pas";
+  if (durum.tekrarModu) tekrarSonucYaz(durum.sorular[durum.index], false);
   gunlukEkle(false);
   sonrakiSoru();
 }
@@ -2368,6 +2380,9 @@ function bitir() {
   clearTimeout(durum.zamanlayici);
   durum.index = durum.sorular.length;
   ilerlemeKaydet();
+  if (durum.tekrarModu) { tekrarBitis(); return; }
+  $("#btn-bastan").textContent = "Baştan Başla";
+  $("#btn-bastan").classList.remove("gizli");
   const s = sayilar(durum.sonuclar);
   $("#bitis-ozet").textContent =
     `${durum.sorular.length} sorudan ${s.dogru} doğru, ${s.yanlis} yanlış, ${s.pas} pas.`;
@@ -2378,6 +2393,7 @@ function bitir() {
 }
 
 function bastanBasla() {
+  if (durum.tekrarModu) { tekrarDevamEt(); return; }
   $("#ortu-bitis").classList.add("gizli");
   // baştan başlamak yeni bir sıra demek — aynı soruları aynı düzende sormasın
   const ham = sorulariUret(durum.konu);
@@ -2392,6 +2408,7 @@ function bastanBasla() {
 }
 
 function calismadanCik() {
+  durum.tekrarModu = false;
   clearTimeout(durum.zamanlayici);
   ilerlemeKaydet();
   durum.duraklatildi = false;

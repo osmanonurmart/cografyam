@@ -69,6 +69,13 @@ const Bulut = {
          varsa, yereldeki bir kez yukarı taşınır. Dinleyiciler başlamadan
          önce ve yalnızca burada yapılır — snapshot'a bağlı yükleme silinen
          kayıtları diriltiyordu. */
+      /* Yedek geri yüklendiyse yön terstir: bulutu değil, bu cihazı
+         doğru kabul et — yoksa snapshot yedeği anında geri alır. */
+      if (localStorage.getItem(ONEK + "yedekGeriYuklendi")) {
+        await this.tumIcerigiGonder(true);
+        localStorage.removeItem(ONEK + "yedekGeriYuklendi");
+        bildir("Yedek buluta da yüklendi");
+      }
       for (const [anahtar, koleksiyon] of ICERIK_KOLEKSIYONLARI) {
         const anlik = await Promise.race([
           this._db.collection(koleksiyon).get(),

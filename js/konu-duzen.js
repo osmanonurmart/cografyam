@@ -619,11 +619,52 @@ function iceHaritasi() {
      konu yoksa yeni konu, varsa Yeni konu / Üzerine yaz / İptal sorulur. */
 let iceDosyaAdi = "";
 let iceBekleyen = null;            // ad çakışması sorulurken hazırlanmış içerik
+let iceKuyruk = [];                // birden fazla dosya seçildiyse sıradakiler
+let iceOzetler = [];               // toplu aktarmanın dosya başına sonucu
+let iceToplam = 0;                 // 0 = tek dosya/yapıştırma
+
+/* Sıradaki dosyayı işler; kuyruk bitince toplu özeti gösterir. */
+function iceSiradakiDosya() {
+  const d = iceKuyruk.shift();
+  if (!d) { iceTopluBitir(); return; }
+  iceDosyaAdi = d.ad;
+  $("#ice-metin").value = d.metin;
+  konuIceUygula();
+}
+
+function iceTopluKaydet(ozet, hatalar) {
+  iceOzetler.push({ ad: iceDosyaAdi, ozet, hatalar: hatalar || [] });
+  $("#ice-cakisma").classList.add("gizli");
+  iceSiradakiDosya();
+}
+
+function iceTopluBitir() {
+  const toplam = iceToplam;
+  const uyarili = iceOzetler.filter(o => o.hatalar.length);
+  const aktarilan = iceOzetler.filter(o => !o.atlandi).length;
+  iceToplam = 0;
+  iceKuyruk = [];
+  if (!uyarili.length) {
+    const ozetler = iceOzetler;
+    iceKapat();
+    bildir(`${aktarilan}/${toplam} dosya içe aktarıldı`, 3600);
+    iceOzetler = ozetler;
+    return;
+  }
+  const satirlar = [];
+  iceOzetler.forEach(o => o.hatalar.forEach(h => satirlar.push(`${o.ad}: ${h}`)));
+  iceSonucGoster(`${aktarilan}/${toplam} dosya içe aktarıldı — şunlara dikkat:`, satirlar, aktarilan > 0);
+  $("#btn-ice-uygula").classList.add("gizli");
+  $("#btn-ice-kapat").textContent = "Kapat";
+}
 
 function konuIceAc(konu) {
   iceKonu = konu;
   iceDosyaAdi = "";
   iceBekleyen = null;
+  iceKuyruk = [];
+  iceOzetler = [];
+  iceToplam = 0;
   const genel = !konu;
   $("#ice-baslik").textContent = genel ? "İçe aktar" : "Konuya içe aktar";
   $("#ice-aciklama").textContent = genel
@@ -682,6 +723,7 @@ function iceKonuyaYaz(konu, sonuc, degistir) {
 
 /* Uyarı yoksa pencere kapanır; varsa açık kalır ki atlanan satırlar görülsün */
 function iceBitir(ozet, hatalar) {
+  if (iceToplam) { iceTopluKaydet(ozet, hatalar); return; }
   if (!hatalar.length) { iceKapat(); bildir(ozet, 3200); return; }
   iceSonucGoster(ozet + " — şunlara dikkat:", hatalar, true);
   $("#ice-mod").classList.add("gizli");
@@ -693,13 +735,17 @@ function iceBitir(ozet, hatalar) {
 function konuIceUygula() {
   let veri;
   try { veri = iceCoz($("#ice-metin").value, !iceKonu); }
-  catch (e) { iceSonucGoster(e.message, [], false); return; }
+  catch (e) {
+    if (iceToplam) { iceOzetler.push({ ad: iceDosyaAdi, ozet: "", hatalar: [e.message], atlandi: true }); iceSiradakiDosya(); return; }
+    iceSonucGoster(e.message, [], false);
+    return;
+  }
   if (!iceKonu) { iceGenelUygula(veri); return; }
 
   const konu = konuBul(iceKonu.id);
   if (!konu) { iceKapat(); return; }
   const { sonuc, hatalar } = iceHazirla(veri);
-  if (iceBosMu(sonuc)) { iceSonucGoster("Eklenecek bir şey bulunamadı", hatalar, false); return; }
+  if (iceBosMu(sonuc)) { iceBosUyar(hatalar); return; }
 
   const secili = $("#ice-mod-secim .secenek.secili");
   const degistir = !$("#ice-mod").classList.contains("gizli") && secili && secili.dataset.deger === "degistir";
@@ -715,16 +761,22 @@ function iceGenelUygula(veri) {
   if (yedekMi(veri)) { iceKapat(); yedegiIceAktar(veri); return; }
 
   const { sonuc, hatalar } = iceHazirla(veri);
-  if (iceBosMu(sonuc)) { iceSonucGoster("Eklenecek bir şey bulunamadı", hatalar, false); return; }
+  if (iceBosMu(sonuc)) { iceBosUyar(hatalar); return; }
   const ad = sonuc.konu.ad || (iceDosyaAdi ? dosyaAdindanAd(iceDosyaAdi).slice(0, 28) : "") || "Yeni konu";
   iceBekleyen = { sonuc, hatalar, ad };
 
   const ayni = iceAdlaBul(ad);
   if (!ayni) { iceYeniKonuya(ad); return; }
-  $("#ice-cakisma-yazi").textContent = `"${ayni.ad}" adında bir konu zaten var. Ne yapalım?`;
+  $("#ice-cakisma-yazi").textContent =
+    (iceToplam ? `${iceDosyaAdi}: ` : "") + `"${ayni.ad}" adında bir konu zaten var. Ne yapalım?`;
   $("#ice-cakisma").classList.remove("gizli");
   $("#ice-sonuc").className = "ice-sonuc gizli";
   $("#btn-ice-uygula").classList.add("gizli");
+}
+
+function iceBosUyar(hatalar) {
+  if (iceToplam) { iceOzetler.push({ ad: iceDosyaAdi, ozet: "", hatalar: hatalar.concat("içinde eklenecek bir şey yok"), atlandi: true }); iceSiradakiDosya(); return; }
+  iceSonucGoster("Eklenecek bir şey bulunamadı", hatalar, false);
 }
 
 function iceAdlaBul(ad) {
@@ -733,7 +785,11 @@ function iceAdlaBul(ad) {
 
 function iceCakismaSecildi(secim) {
   const b = iceBekleyen;
-  if (!b || secim === "iptal") { iceKapat(); return; }
+  if (!b || secim === "iptal") {
+    if (iceToplam) { iceOzetler.push({ ad: iceDosyaAdi, ozet: "", hatalar: [], atlandi: true }); $("#ice-cakisma").classList.add("gizli"); iceSiradakiDosya(); return; }
+    iceKapat();
+    return;
+  }
   $("#ice-cakisma").classList.add("gizli");
   if (secim === "uzerine") {
     const konu = iceAdlaBul(b.ad);
@@ -788,11 +844,23 @@ function konuIceOlaylari() {
   $("#ice-metin").addEventListener("input", () => { iceDosyaAdi = ""; });
   $("#btn-ice-dosya").addEventListener("click", () => $("#ice-dosya").click());
   $("#ice-dosya").addEventListener("change", async e => {
-    const dosya = e.target.files[0];
+    const dosyalar = [...e.target.files];
     e.target.value = "";
-    if (!dosya) return;
-    try { $("#ice-metin").value = await dosya.text(); iceDosyaAdi = dosya.name; }
+    if (!dosyalar.length) return;
+    let icerik;
+    try { icerik = await Promise.all(dosyalar.map(async d => ({ ad: d.name, metin: await d.text() }))); }
     catch (err) { iceSonucGoster("Dosya okunamadı", [], false); return; }
-    konuIceUygula();
+
+    if (icerik.length === 1) {
+      iceDosyaAdi = icerik[0].ad;
+      $("#ice-metin").value = icerik[0].metin;
+      konuIceUygula();
+      return;
+    }
+    /* birden fazla dosya: sırayla işlenir, çakışma çıkarsa o dosya için sorulur */
+    iceKuyruk = icerik;
+    iceOzetler = [];
+    iceToplam = icerik.length;
+    iceSiradakiDosya();
   });
 }

@@ -853,6 +853,28 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
   border:2px dashed var(--mavi);border-radius:12px;background:rgba(59,130,246,.08);
 }
 
+/* ================= GÜNLÜK TEKRAR KARTI ================= */
+.tekrar-kart{
+  display:flex;align-items:center;gap:14px;width:100%;margin-bottom:14px;
+  padding:14px 16px;border-radius:16px;text-align:left;color:var(--metin);
+  background:linear-gradient(135deg,#1d4ed8,#0e7490);border:1px solid rgba(255,255,255,.14);
+  box-shadow:0 10px 26px rgba(0,0,0,.28);
+}
+.tekrar-kart:hover{filter:brightness(1.08)}
+.tekrar-kart.bitti{background:linear-gradient(135deg,#166534,#115e59)}
+.tk-ikon{font-size:30px;line-height:1;flex:none}
+.tk-yazi{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1}
+.tk-ad{font-size:17px;font-weight:800}
+.tk-alt{font-size:12.5px;color:rgba(255,255,255,.82)}
+.tk-alt.ince{font-size:11.5px;color:rgba(255,255,255,.62)}
+.tk-cubuk{height:5px;border-radius:999px;background:rgba(0,0,0,.28);overflow:hidden}
+.tk-cubuk span{display:block;height:100%;background:#fff;border-radius:999px}
+@media (max-width:640px){
+  .tekrar-kart{padding:11px 12px;gap:10px;border-radius:14px}
+  .tk-ikon{font-size:24px}
+  .tk-ad{font-size:15px}
+}
+
 /* ================= KONU AYARLARI EKRANI ================= */
 .konu-ozet{
   display:flex;align-items:center;gap:14px;border-radius:16px;padding:16px;margin-bottom:18px;
