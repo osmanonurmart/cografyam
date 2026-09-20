@@ -304,13 +304,15 @@ g#guney-kibris,g#kuzey-kibris{display:none}
   padding:10px 14px;padding-bottom:max(10px,env(safe-area-inset-bottom));
 }
 .soru-kutu{
-  flex:0 1 620px;min-width:0;height:64px;background:var(--panel);border:1px solid var(--line);
+  flex:0 1 620px;min-width:0;height:auto;min-height:64px;background:var(--panel);border:1px solid var(--line);
   border-radius:14px;padding:0 18px;text-align:center;box-shadow:0 10px 26px rgba(0,0,0,.35);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
 }
+/* Soru: kutunun ortasında, sığmazsa satırlara bölünür ve küçülür
+   (boyutu soruMetniSigdir ayarlar) */
 .soru-metin{
-  font-size:clamp(14px,2.1vw,19px);font-weight:700;line-height:1.25;width:100%;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:19px;font-weight:700;line-height:1.25;width:100%;flex:none;max-height:76px;
+  display:flex;align-items:center;justify-content:center;text-align:center;overflow:hidden;
 }
 .geri-bildirim{
   font-size:12.5px;font-weight:700;height:16px;line-height:16px;color:var(--sonuk);
@@ -428,14 +430,9 @@ g#guney-kibris,g#kuzey-kibris{display:none}
   #btn-geri .etiket,#btn-pas .etiket{display:block;font-size:9.5px}
   .soru-kutu{
     grid-row:1;grid-column:4;align-self:center;justify-self:stretch;
-    height:50px;margin:6px 0;padding:0 12px;border-radius:12px;box-shadow:none;gap:1px;
+    height:auto;min-height:50px;margin:6px 0;padding:2px 12px;border-radius:12px;box-shadow:none;gap:1px;
   }
-  .soru-metin{font-size:15px}
-  /* uzun soru: iki satır, küçük yazı (soruMetniSigdir sınıfı verir) */
-  .soru-metin.uzun{
-    font-size:12.5px;line-height:1.2;white-space:normal;
-    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
-  }
+  .soru-metin{font-size:15px;line-height:1.2;max-height:44px}
   .geri-bildirim{font-size:11px;height:13px;line-height:13px;min-height:0}
   /* boşken yer kaplamasın: soru kutunun dikey ortasında dursun */
   .geri-bildirim:empty{display:none}
@@ -891,6 +888,14 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .tekrar-ozet{min-width:0}
 .tekrar-baslik{font-size:19px;font-weight:800;margin-bottom:4px}
 .tekrar-alt{font-size:13px;color:var(--sonuk);line-height:1.6}
+.tekrar-tahmin{
+  margin:10px 0 0;padding:11px 13px;border-radius:12px;font-size:13.5px;line-height:1.5;
+  background:var(--panel);border:1px solid var(--line);
+}
+.tekrar-tahmin.uyari{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.35)}
+.tekrar-tahmin .ince{display:block;margin-top:4px;font-size:12px;color:var(--sonuk)}
+#tekrar-sinav{max-width:220px}
+#tekrar-sure-secim{flex-wrap:wrap;gap:8px}
 .tekrar-liste{display:flex;flex-direction:column;gap:8px}
 .tekrar-satir{
   display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;

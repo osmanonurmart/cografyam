@@ -99,10 +99,13 @@ açılış çalışmazdı.
   Profiller öncesi tek kullanıcılı kayıtlar (`ilerleme`/`gunluk` içindeki
   `ortak`) taşınmaz — taşıma bulut snapshot'ıyla yarışıp geri alınıyordu;
   onun yerine ilk profil okurken onlara da bakar (`eskiKayitlarBuProfilde`).
-- **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. Bir soru iki kez
-  üst üste doğru bilinince öğrenilmiş sayılır, aynı gün ikinci kez sorulmaz;
-  öğrenilenler 5 gün sonra hatırlatma olarak döner ve günlük kotanın ~%20'si
-  onlara ayrılır (yoksa öğrenilmemişler bitene dek hiç gelmezlerdi).
+- **Günlük tekrar tur mantığıyla çalışır** ([GUNLUK-GOREV-MANTIGI.md](GUNLUK-GOREV-MANTIGI.md)):
+  sabit sıra + imleç, günün listesi seçilen süreye göre gün başında kurulur ve
+  gün içinde değişmez; bilinemeyen soru ertesi günün başına yazılır. Soru süresi
+  metin uzunluğundan tahmin edilir, ölçülen sürelerle kendini ayarlar.
+- **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. İki kez üst üste
+  doğru bilinen soru öğrenilmiş sayılır ve sonraki turlarda atlanır; yanlış
+  bilinirse sayaç sıfırlanır ve soru geri döner.
 - **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
   `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
   `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette

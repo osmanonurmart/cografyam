@@ -1920,12 +1920,19 @@ function mobilDuzen() {
   soruMetniSigdir();
 }
 
-/* Yatay telefonda soru tek satıra sığmıyorsa iki satır ve küçük yazı */
+/* Soru kutuya sığsın: gerekirse satırlara bölünür ve yazı küçülür.
+   Kutu sabit yükseklikte olduğu için yazı, taşmayan en büyük boyuta
+   ayarlanır; metin kutunun ortasında kalır. */
 function soruMetniSigdir() {
   const el = $("#soru-metin");
-  el.classList.remove("uzun");
-  if (!matchMedia(MOBIL_YATAY).matches) return;
-  if (el.scrollWidth > el.clientWidth + 1) el.classList.add("uzun");
+  if (!el) return;
+  const taban = matchMedia(MOBIL_YATAY).matches ? 15 : 19;
+  let boy = taban;
+  el.style.fontSize = boy + "px";
+  while (boy > 10 && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1)) {
+    boy -= 0.5;
+    el.style.fontSize = boy + "px";
+  }
 }
 
 let _mobilZaman = null;
