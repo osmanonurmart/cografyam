@@ -82,6 +82,12 @@ açılış çalışmazdı.
   kimlik listesi). Düzenle'de soru kartındaki *Haritadan seç* ile toplanır,
   hepsi bulunmadan soru bitmez. Şekillerin kendi kartları ve soruları
   bundan bağımsızdır.
+- **Konu kartının arkası var.** İlerlemesi olan konuya tıklayınca kart 3B
+  çevrilir ve "▶ Devam / ↺ Sıfırdan" çıkar; boş konu doğrudan açılır.
+  Eskiden ön yüzde iki küçük daire (▶ ve ↺) vardı, mobilde ıskalanıyordu.
+  Yüzler `.konu-kutu` ızgarasının aynı gözünde duruyor — kartta
+  `place-content:stretch` olmazsa eski kuralın `justify-content:space-between`i
+  tek sütunu esnetmiyor ve yüzler sola sıkışıyor.
 - **Ana ekran sıralaması** kutuyu 250 ms basılı tutup sürükleyerek değişir;
   `sira` alanına yazılır. Taşıma yalnızca aynı kapsayıcı içinde olur ve
   "Günlük Tekrar" (`.sabit`) ilk hücrede kalır. Bırakışın ardından 400 ms

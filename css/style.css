@@ -461,7 +461,7 @@ g#guney-kibris,g#kuzey-kibris{display:none}
 /* mobil: satırda 3 konu */
 @media (max-width:640px){
   .konu-grid{grid-template-columns:repeat(3,1fr);gap:9px}
-  .konu-kutu{min-height:auto;padding:11px 10px 10px;border-radius:13px;gap:6px}
+  .konu-kutu{min-height:auto;border-radius:13px}
   .k-ayar{width:22px;height:22px;font-size:11px;border-radius:7px}
   .k-ikon{font-size:20px}
   .k-ad{font-size:13px;margin-top:5px;line-height:1.2}
@@ -718,13 +718,41 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .ozet-bos{font-style:italic;opacity:.75}
 
 /* ================= KONU KUTUSU (sade) ================= */
+/* İki yüzlü kart: ön yüz simge+ad+halka, arka yüz "Devam / Sıfırdan".
+   Yüzler tek ızgara gözünde üst üste; ön 0°'den 180°'ye, arka 180°'den
+   360°'ye döner, backface-visibility hangisinin görüneceğini belirler. */
 .konu-kutu{
-  position:relative;border-radius:var(--r);padding:16px 14px 13px;min-height:auto;cursor:pointer;
+  position:relative;border-radius:var(--r);min-height:auto;cursor:pointer;padding:0;
   background:linear-gradient(160deg,var(--k1),var(--k2));border:1px solid var(--line);
-  display:flex;flex-direction:column;align-items:center;gap:9px;overflow:hidden;text-align:center;
+  display:grid;place-content:stretch;overflow:hidden;text-align:center;perspective:700px;
+  /* place-content şart: eski kuraldaki justify-content:space-between grid'de
+     tek sütunu esnetmiyor, yüzler kartın soluna sıkışıyordu. */
   transition:transform .15s ease,box-shadow .15s ease;
 }
-.k-emoji{font-size:34px;line-height:1}
+.kart-yuz{
+  grid-area:1/1;padding:16px 14px 13px;
+  display:flex;flex-direction:column;align-items:center;gap:9px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  transition:transform .42s ease;
+}
+.kart-yuz.arka{
+  transform:rotateY(180deg);justify-content:center;gap:7px;
+  background:rgba(0,0,0,.3);
+}
+.konu-kutu.cevrik .kart-yuz.on{transform:rotateY(180deg)}
+.konu-kutu.cevrik .kart-yuz.arka{transform:rotateY(360deg)}
+.kart-secim{
+  width:100%;padding:9px 6px;border-radius:11px;color:#fff;font-size:14px;
+  background:rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.22);
+  display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;
+}
+.kart-secim:hover{background:rgba(0,0,0,.55)}
+.kart-kapat{
+  border:0;background:none;color:rgba(255,255,255,.75);cursor:pointer;
+  font-size:13px;line-height:1;padding:3px 8px;
+}
+.kart-kapat:hover{color:#fff}
+.k-emoji{font-size:27px;line-height:1}
 .konu-kutu .k-ad{
   font-size:15.5px;font-weight:750;margin:0;line-height:1.2;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
@@ -738,9 +766,9 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
    konularda da yer kaplar (yalnızca görünmez olur); böylece daire bütün
    kutularda tam aynı noktada durur ve iki düğme hiçbir genişlikte üst üste
    binmez — kutu ne kadar darsa da yan yana kalırlar. */
-.k-eylem{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:auto;min-height:36px}
+.k-eylem{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:auto;min-height:30px}
 .k-durum,.k-sifirla{
-  position:relative;width:36px;height:36px;border-radius:50%;flex:none;
+  position:relative;width:30px;height:30px;border-radius:50%;flex:none;
   background:rgba(0,0,0,.34);border:1px solid rgba(255,255,255,.18);
   display:grid;place-items:center;color:#fff;
 }
@@ -750,19 +778,22 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .k-halka .halka-zemin{stroke:rgba(255,255,255,.18)}
 .k-halka .halka-dolu{stroke:#fff;transition:stroke-dasharray .4s ease}
 .k-simge{display:grid;place-items:center;line-height:0;position:relative;top:0}
-.k-simge svg{display:block;width:15px;height:15px;fill:currentColor}
+.k-simge svg{display:block;width:13px;height:13px;fill:currentColor}
 .konu-kutu.bitti .k-simge{color:#86efac}
 .k-sifirla{font-size:16px;color:rgba(255,255,255,.8)}
 .konu-kutu.pasif .k-durum{opacity:.5}
 
 @media (max-width:640px){
-  .konu-kutu{padding:12px 8px 10px;gap:7px;border-radius:13px}
-  .k-emoji{font-size:26px}
+  .konu-kutu{border-radius:13px}
+  .kart-yuz{padding:13px 12px 12px;gap:6px}      /* simgeler kenara değmesin */
+  .kart-yuz.arka{padding:10px;gap:6px}
+  .kart-secim{font-size:12.5px;padding:8px 4px;border-radius:10px}
+  .kart-kapat{font-size:12px}
+  .k-emoji{font-size:22px}
   .konu-kutu .k-ad{font-size:12.5px}
-  .k-durum,.k-sifirla{width:30px;height:30px}
-  .k-eylem{min-height:30px;gap:4px}
-  .k-simge svg{width:13px;height:13px}
-  .k-sifirla{font-size:14px}
+  .k-durum,.k-sifirla{width:26px;height:26px}
+  .k-eylem{min-height:26px;gap:4px}
+  .k-simge svg{width:11px;height:11px}
   .gunluk-ozet{font-size:11px;gap:4px}
   .marka-kucuk{font-size:17px}
   .ust-sol{gap:7px}
@@ -1047,12 +1078,18 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 
 /* ================= MOBİL: SİMGELER YARIYA ================= */
 @media (max-width:640px){
-  .k-emoji{font-size:15px}
-  .konu-kutu{padding:10px 6px 8px;gap:5px}
+  .k-emoji{font-size:14px}
+  /* Boşluk kartın kendisinde değil yüzünde: kenara değmesinler. */
+  .konu-kutu{padding:0}
+  .kart-yuz{padding:11px 11px 10px;gap:5px}
+  .kart-yuz.arka{padding:9px 10px;gap:5px}
+  .kart-secim{font-size:11.5px;padding:7px 4px;border-radius:9px;gap:4px}
+  .kart-kapat{font-size:11px;padding:2px 6px}
   .konu-kutu .k-ad{font-size:11.5px}
-  .k-durum,.k-sifirla{width:26px;height:26px}
-  .k-simge{font-size:10.5px}
-  .k-sifirla{font-size:12px}
+  .k-durum,.k-sifirla{width:24px;height:24px}
+  .k-simge{font-size:10px}
+  .k-eylem{min-height:24px}
+  .k-simge svg{width:10px;height:10px}
   .k-halka circle{stroke-width:3.2}
   .ust-emoji{font-size:15px}
   .ust-baslik{font-size:12.5px;margin-bottom:9px}

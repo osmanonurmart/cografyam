@@ -1924,33 +1924,56 @@ function konuKutusu(konu) {
   const dolu = (yuzde / 100) * cevre;
 
   const kutu = document.createElement("div");
-  kutu.className = "konu-kutu" + (toplam ? "" : " pasif") + (bitti ? " bitti" : "");
+  const cevrilir = yarim || bitti;      // arkası olan kart
+  kutu.className = "konu-kutu" + (toplam ? "" : " pasif") + (bitti ? " bitti" : "")
+                 + (cevrilir ? " cevrilir" : "");
   kutu.dataset.konu = konu.id;
   kutu.style.setProperty("--k1", konu.renk);
   kutu.style.setProperty("--k2", karart(konu.renk, 0.45));
+  /* İlerlemesi olan konuda "devam mı, sıfırdan mı" kartın ARKA yüzünde:
+     mobilde iki küçük daireyi (▶ ve ↺) ıskalamak kolaydı. Boş konu
+     doğrudan açılır — sorulacak bir şey yok. */
   kutu.innerHTML = `
-    <div class="k-emoji">${guvenli(konu.ikon)}</div>
-    <div class="k-ad">${guvenli(konu.ad)}</div>
-    <div class="k-eylem">
-      <button class="k-durum" title="${guvenli(baslikMetni)}" aria-label="${guvenli(baslikMetni)}">
-        <svg class="k-halka" viewBox="0 0 32 32" aria-hidden="true">
-          <circle class="halka-zemin" cx="16" cy="16" r="13"></circle>
-          <circle class="halka-dolu" cx="16" cy="16" r="13"
-                  stroke-dasharray="${dolu.toFixed(1)} ${cevre.toFixed(1)}"></circle>
-        </svg>
-        <span class="k-simge">${simge}</span>
-      </button>
-      ${(yarim || bitti)
-        ? `<button class="k-sifirla" title="Sıfırdan başla" aria-label="Sıfırdan başla">↺</button>`
-        : ""}
-    </div>`;
+    <div class="kart-yuz on">
+      <div class="k-emoji">${guvenli(konu.ikon)}</div>
+      <div class="k-ad">${guvenli(konu.ad)}</div>
+      <div class="k-eylem">
+        <span class="k-durum" title="${guvenli(baslikMetni)}" aria-label="${guvenli(baslikMetni)}">
+          <svg class="k-halka" viewBox="0 0 32 32" aria-hidden="true">
+            <circle class="halka-zemin" cx="16" cy="16" r="13"></circle>
+            <circle class="halka-dolu" cx="16" cy="16" r="13"
+                    stroke-dasharray="${dolu.toFixed(1)} ${cevre.toFixed(1)}"></circle>
+          </svg>
+          <span class="k-simge">${simge}</span>
+        </span>
+      </div>
+    </div>
+    ${cevrilir ? `
+      <div class="kart-yuz arka">
+        <button class="kart-secim" data-devam>▶ <b>Devam</b></button>
+        <button class="kart-secim" data-sifirla>↺ <b>Sıfırdan</b></button>
+        <button class="kart-kapat" data-kapat aria-label="Vazgeç">✕</button>
+      </div>` : ""}`;
 
   kutu.addEventListener("click", ev => {
-    if (ev.target.closest(".k-sifirla")) { konuSifirla(konu); return; }
+    if (ev.target.closest("[data-kapat]"))   { kutu.classList.remove("cevrik"); return; }
+    if (ev.target.closest("[data-sifirla]")) { kutu.classList.remove("cevrik"); konuSifirla(konu); return; }
+    if (ev.target.closest("[data-devam]"))   { kutu.classList.remove("cevrik"); konuyuBaslat(konu); return; }
     if (!toplam) { bildir(`"${konu.ad}" konusunda henüz soru yok`); return; }
+    if (cevrilir) {
+      const acikti = kutu.classList.contains("cevrik");
+      kartlariKapat(kutu);
+      kutu.classList.toggle("cevrik", !acikti);
+      return;
+    }
     konuyuBaslat(konu);
   });
   return kutu;
+}
+
+/* Aynı anda tek kart çevrik kalsın. */
+function kartlariKapat(haric) {
+  $$("#konu-grid .konu-kutu.cevrik").forEach(k => { if (k !== haric) k.classList.remove("cevrik"); });
 }
 
 function konuSifirla(konu) {

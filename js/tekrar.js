@@ -253,17 +253,19 @@ function tekrarKarti() {
   kutu.style.setProperty("--k1", "#0ea5e9");
   kutu.style.setProperty("--k2", karart("#0ea5e9", 0.45));
   kutu.innerHTML = `
-    <div class="k-emoji">${o.kalan ? "🔁" : "✅"}</div>
-    <div class="k-ad">Günlük Tekrar</div>
-    <div class="k-eylem">
-      <button class="k-durum" title="${o.kalan ? `Bugün ${o.kalan} soru kaldı` : "Bugünlük tamam"}">
-        <svg class="k-halka" viewBox="0 0 32 32" aria-hidden="true">
-          <circle class="halka-zemin" cx="16" cy="16" r="13"></circle>
-          <circle class="halka-dolu" cx="16" cy="16" r="13"
-                  stroke-dasharray="${(yuzde / 100) * cevre} ${cevre}"></circle>
-        </svg>
-        <span class="k-simge">${o.kalan || "✓"}</span>
-      </button>
+    <div class="kart-yuz on">
+      <div class="k-emoji">${o.kalan ? "🔁" : "✅"}</div>
+      <div class="k-ad">Günlük Tekrar</div>
+      <div class="k-eylem">
+        <span class="k-durum" title="${o.kalan ? `Bugün ${o.kalan} soru kaldı` : "Bugünlük tamam"}">
+          <svg class="k-halka" viewBox="0 0 32 32" aria-hidden="true">
+            <circle class="halka-zemin" cx="16" cy="16" r="13"></circle>
+            <circle class="halka-dolu" cx="16" cy="16" r="13"
+                    stroke-dasharray="${(yuzde / 100) * cevre} ${cevre}"></circle>
+          </svg>
+          <span class="k-simge">${o.kalan || "✓"}</span>
+        </span>
+      </div>
     </div>`;
   kutu.addEventListener("click", tekrarEkraniAc);
   return kutu;
