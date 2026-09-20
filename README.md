@@ -101,7 +101,8 @@ açılış çalışmazdı.
   onun yerine ilk profil okurken onlara da bakar (`eskiKayitlarBuProfilde`).
 - **Günlük tekrar tur mantığıyla çalışır** ([GUNLUK-GOREV-MANTIGI.md](GUNLUK-GOREV-MANTIGI.md)):
   sabit sıra + imleç, günün listesi seçilen süreye göre gün başında kurulur ve
-  gün içinde değişmez; bilinemeyen soru ertesi günün başına yazılır. Soru süresi
+  gün içinde değişmez; bilinemeyen soru ertesi günün başına yazılır. Sıra
+  KARIŞIKTIR (konu konu değil) ve her yeni turda yeniden karışır. Soru süresi
   metin uzunluğundan tahmin edilir, ölçülen sürelerle kendini ayarlar.
 - **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. İki kez üst üste
   doğru bilinen soru öğrenilmiş sayılır ve sonraki turlarda atlanır; yanlış

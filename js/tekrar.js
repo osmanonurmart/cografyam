@@ -51,7 +51,17 @@ function tekrarOgeler() {
   return harita;
 }
 
-/* Silinen soru sıradan düşer (imleci kaydırmaz), yeni soru sona eklenir */
+function karistir(dizi) {
+  for (let i = dizi.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [dizi[i], dizi[j]] = [dizi[j], dizi[i]];
+  }
+  return dizi;
+}
+
+/* Silinen soru sıradan düşer (imleci kaydırmaz), yeni sorular karıştırılıp
+   sıranın görülmemiş kısmına eklenir. Sıra konu konu değil KARIŞIKTIR:
+   bir günde farklı konulardan sorular arka arkaya gelir. */
 function tekrarSirayiGuncelle(t, ogeler) {
   const yeni = [];
   let yeniPos = 0;
@@ -61,9 +71,18 @@ function tekrarSirayiGuncelle(t, ogeler) {
     yeni.push(anahtar);
   });
   const varOlan = new Set(yeni);
-  ogeler.forEach((_, anahtar) => { if (!varOlan.has(anahtar)) yeni.push(anahtar); });
-  t.sira = yeni;
-  t.pos = Math.min(yeniPos, yeni.length);
+  const eklenecek = [];
+  ogeler.forEach((_, anahtar) => { if (!varOlan.has(anahtar)) eklenecek.push(anahtar); });
+  t.sira = yeni.concat(karistir(eklenecek));
+  t.pos = Math.min(yeniPos, t.sira.length);
+
+  /* eski sürümden gelen konu konu sıralı liste bir kez karıştırılır;
+     yalnızca bu turda görülmemiş kısım karışır ki imleç bozulmasın */
+  if (!t.karisik) {
+    const kalan = karistir(t.sira.slice(t.pos));
+    t.sira = t.sira.slice(0, t.pos).concat(kalan);
+    t.karisik = true;
+  }
 }
 
 /* ---------------- süre tahmini ---------------- */
@@ -136,7 +155,7 @@ function tekrarListeyiDoldur(t, ogeler) {
   const katsayi = tekrarKatsayi(t);
   const liste = [];
   const eklenen = new Set();
-  let kullanilan = 0, borctan = 0;
+  let kullanilan = 0, borctan = 0, yeniTur = false;
   let pos = bas.pos, tur = bas.tur;
   const borc = bas.borc.filter(a => ogeler.has(a));
 
@@ -151,11 +170,13 @@ function tekrarListeyiDoldur(t, ogeler) {
 
   for (let güvenlik = 0; güvenlik < t.sira.length; güvenlik++) {
     if (liste.length && kullanilan >= butce) break;
-    if (pos >= t.sira.length) { pos = 0; tur++; }
+    if (pos >= t.sira.length) { pos = 0; tur++; yeniTur = true; }
     const anahtar = t.sira[pos++];
     if (!tekrarOgrenildiMi(t, anahtar)) al(anahtar);      // öğrenilenler turda atlanır
   }
 
+  /* her yeni turda sıra yeniden karışsın — aynı diziliş tekrar etmesin */
+  if (yeniTur) t.karisik = false;
   t.liste = liste;
   t.borc = borc;
   t.borcSayisi = borctan;
@@ -331,7 +352,7 @@ let tekrarSoruBasi = 0;
 function tekrarBaslat() {
   const t = tekrarDurum();
   const ogeler = tekrarOgeler();
-  const kuyruk = tekrarKalanlar(t).filter(a => ogeler.has(a)).map(a => ogeler.get(a));
+  const kuyruk = karistir(tekrarKalanlar(t).filter(a => ogeler.has(a)).map(a => ogeler.get(a)));
   if (!kuyruk.length) { bildir("Bugünkü tekrar tamam — yarın yeni sorular gelecek"); return; }
 
   durum.tekrarModu = true;
