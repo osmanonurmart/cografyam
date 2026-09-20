@@ -158,8 +158,17 @@ tıklanarak verilir.
 | `{ "metin": "…", "il": "Konya" }` | Tek il |
 | `{ "metin": "…", "iller": ["Balıkesir", "Kütahya"] }` | Birden fazla il |
 | `{ "metin": "…", "bolge": "Karadeniz" }` | Bölge |
+| `{ "metin": "…", "objeler": ["Menteşe Dağları", "Amanoslar"] }` | Haritadaki şekiller |
 
-Cevabı olmayan (il de bölge de yazılmamış) soru atlanır.
+`objeler` yazarsan cevap haritadaki o objelere tıklanarak verilir ve
+**hepsi bulunmalıdır** — birden fazla dağı tek soruda toplamanın yolu budur
+(*"Kıyıya paralel uzanan dağlar hangileridir?"*). Adlar aynı koddaki ya da
+konuda zaten duran objelerle eşleştirilir; büyük/küçük harf ve Türkçe
+karakter önemsizdir. Bu **ayrı bir kayıttır**: Menteşe ve Amanos kendi
+kartlarında kalır, *"Hangisi Menteşe Dağları?"* soruları da sorulmaya
+devam eder.
+
+Cevabı olmayan (il, bölge ya da tanınan obje yazılmamış) soru atlanır.
 
 ## Adlar nasıl eşleşir
 

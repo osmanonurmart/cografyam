@@ -2,27 +2,27 @@
    Strateji: ÖNCE AĞ, olmazsa önbellek.
    Böylece dosyaları her güncellediğimizde tarayıcı en yeni sürümü alır;
    internet yoksa son indirilen sürümle çalışmaya devam eder. */
-const SURUM = "cografyam-v72";
+const SURUM = "cografyam-v73";
 
 const DOSYALAR = [
   "./",
   "./index.html",
-  "./css/style.css?s=72",
-  "./js/harita-turkiye.js?s=72",
-  "./js/il-merkez.js?s=72",
-  "./js/komsular.js?s=72",
-  "./js/hazir-icerik.js?s=72",
+  "./css/style.css?s=73",
+  "./js/harita-turkiye.js?s=73",
+  "./js/il-merkez.js?s=73",
+  "./js/komsular.js?s=73",
+  "./js/hazir-icerik.js?s=73",
   "./js/vendor/firebase-app-compat.js",
   "./js/vendor/firebase-firestore-compat.js",
-  "./js/surum.js?s=72",
-  "./js/firebase-config.js?s=72",
-  "./js/data.js?s=72",
-  "./js/app.js?s=72",
-  "./js/bulut.js?s=72",
-  "./js/editor.js?s=72",
-  "./js/konu-duzen.js?s=72",
-  "./js/profil.js?s=72",
-  "./js/tekrar.js?s=72",
+  "./js/surum.js?s=73",
+  "./js/firebase-config.js?s=73",
+  "./js/data.js?s=73",
+  "./js/app.js?s=73",
+  "./js/bulut.js?s=73",
+  "./js/editor.js?s=73",
+  "./js/konu-duzen.js?s=73",
+  "./js/profil.js?s=73",
+  "./js/tekrar.js?s=73",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

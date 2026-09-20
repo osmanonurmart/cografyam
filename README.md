@@ -75,7 +75,13 @@ açılış çalışmazdı.
 
 - **Obje = soru.** Haritaya koyduğum her emoji, çizgi ve alan aynı zamanda bir
   sorudur. Doğru cevap koordinata değil `iller` listesine bakar; objeyi
-  sürüklemek cevabı bozmaz.
+  sürüklemek cevabı bozmaz. Alan/çizgi iki türlü taşınır: şeklin üstünden
+  sürüklersem tamamı kayar, tutamaktan sürüklersem tek nokta oynar —
+  ikisinde de bırakınca kapsadığı iller yeniden hesaplanır.
+- **Yazılı sorunun cevabı haritadaki şekiller de olabilir** (`sorular[].objeler`,
+  kimlik listesi). Düzenle'de soru kartındaki *Haritadan seç* ile toplanır,
+  hepsi bulunmadan soru bitmez. Şekillerin kendi kartları ve soruları
+  bundan bağımsızdır.
 - **Soru sırası** konuya girerken bir kez belirlenip ilerlemeyle saklanır: yarıda
   bırakıp dönünce aynı sıra, baştan başlayınca yeni sıra. Ayarlar › Soruları
   karıştır ile kapatılabilir.

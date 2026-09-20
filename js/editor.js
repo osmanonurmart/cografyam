@@ -34,7 +34,8 @@ const EKLE_IPUCU = {
   isaret: "Haritada bir ile tıkla",
   cizgi:  "Tıklaya tıklaya çiz · Enter bitirir · Esc iptal",
   alan:   "Kenarları tıklaya tıklaya çiz · Enter kapatır · Esc iptal",
-  balon:  "Baloncuğun duracağı noktaya tıkla"
+  balon:  "Baloncuğun duracağı noktaya tıkla",
+  sec:    "Haritada bir şekle tıkla"
 };
 
 function editorAc() {
@@ -159,7 +160,10 @@ function editorTazele() {
   }
 
   const acik = acikKartiBul(kartlar(konu));
-  const seciliIdler = new Set(acik && acik.tip === "obje" ? acik.objeler.map(o => o.id) : []);
+  const seciliIdler = new Set(
+    acik && acik.tip === "obje" ? acik.objeler.map(o => o.id)
+    : acik && acik.tip === "soru" ? (acik.kayit.objeler || [])   // yazılı sorunun hedefleri
+    : []);
   $$(".obje", editorHarita.objeKat).forEach(t => {
     t.classList.toggle("secili", seciliIdler.has(t.getAttribute("data-obje")));
   });
@@ -194,7 +198,7 @@ function kartListesiCiz() {
 
   if (bekleyen) liste.appendChild(bekleyenKartiCiz());
   else if (!kart.length) {
-    liste.innerHTML = `<p class="bos-uyari kucuk">Henüz soru yok. Aşağıdaki <b>＋ Yeni</b> ile başla.</p>`;
+    liste.innerHTML = `<p class="bos-uyari kucuk">Henüz soru yok. Yukarıdaki <b>＋ Yeni element</b> ile başla.</p>`;
   }
 
   kart.forEach(k => liste.appendChild(kartiCiz(k, acik === k)));
@@ -279,6 +283,19 @@ function konumEkleSatiri() {
       <span class="alan-etiket">Konum ekle</span>
       ${d("isaret", "📍", "İşaret")}${d("cizgi", "〰️", "Çizgi")}${d("alan", "⬭", "Alan")}
     </div>`;
+}
+
+/* Yeni açılan metin kutusuna imleci koyar — tekrar tıklamak gerekmesin.
+   Liste yeniden çizildiği için tazelemeden sonraki kareyi bekler. */
+function odakla(secici, sonuncu) {
+  setTimeout(() => {
+    const hepsi = $$(secici, $("#kart-listesi"));
+    const el = sonuncu ? hepsi[hepsi.length - 1] : hepsi[0];
+    if (!el) return;
+    el.focus();
+    if (el.setSelectionRange) el.setSelectionRange(el.value.length, el.value.length);
+    el.scrollIntoView({ block: "nearest" });
+  }, 30);
 }
 
 function konumEkleOlaylari(kap) {
@@ -502,7 +519,9 @@ function objeKartiOlaylari(govde, k) {
   $("[data-soru-ekle]", govde).addEventListener("click", () => {
     if (!Array.isArray(ilk.sorular)) ilk.sorular = [];
     ilk.sorular.push({ metin: "" });
+    acikBolumler.add("soru");
     kutuphaneKaydet(); editorTazele();
+    odakla("[data-soru]", true);          // yazmaya hemen başlanabilsin
   });
 
   /* görünüm */
@@ -588,22 +607,52 @@ function objeKartiOlaylari(govde, k) {
 }
 
 /* ---- yazılı soru kartı (haritaya işaret koymadan) ---- */
+/* Cevap üç türden biri: tek il, bölge ya da haritadaki seçim birimleri.
+   Sonuncusu birden fazla şekli tek soruda toplar (ör. "kıyıya paralel
+   uzanan dağlar" → Menteşe + Amanos) — o şekillerin kendi kartları ve
+   kendi soruları olduğu gibi kalır, bu ayrı bir kayıttır. */
+function soruHedefTuru(kayit) {
+  /* Dizinin VARLIĞI türü belirler: henüz boşken de "haritadan seç"tesin. */
+  if (Array.isArray(kayit.objeler)) return "obje";
+  return kayit.bolge ? "bolge" : "il";
+}
+
 function soruKartiGovde(k) {
   const konu = editorKonu();
   const govde = document.createElement("div");
   govde.className = "kart-govde";
+  const tur = soruHedefTuru(k.kayit);
   const hedef = k.kayit.bolge ? "B:" + k.kayit.bolge : "I:" + ((k.kayit.hedef || [])[0] || IL_ADLARI[0]);
+  const secilen = (k.kayit.objeler || [])
+    .map(id => (konu.objeler || []).find(o => o.id === id))
+    .filter(Boolean);
+
+  const turBtn = (id, ad) =>
+    `<button class="secenek ${tur === id ? "secili" : ""}" data-cevap-tur="${id}">${ad}</button>`;
+
   govde.innerHTML = `
     <textarea class="kucuk-alan" data-metin rows="2" placeholder="Soru metni">${guvenli(k.kayit.metin || "")}</textarea>
     <label class="alan-etiket">Cevap</label>
-    <select class="secici tam" data-hedef>
-      <optgroup label="Bölge">
-        ${Object.keys(BOLGELER).map(b => `<option value="B:${guvenli(b)}" ${hedef === "B:" + b ? "selected" : ""}>${guvenli(b)} Bölgesi</option>`).join("")}
-      </optgroup>
-      <optgroup label="İl">
-        ${IL_ADLARI.map(il => `<option value="I:${guvenli(il)}" ${hedef === "I:" + il ? "selected" : ""}>${guvenli(il)}</option>`).join("")}
-      </optgroup>
-    </select>
+    <div class="secenek-satir">
+      ${turBtn("il", "İl")}${turBtn("bolge", "Bölge")}${turBtn("obje", "Haritadan seç")}
+    </div>
+    ${tur === "obje" ? `
+      <div class="hedef-listesi">
+        ${secilen.length
+          ? secilen.map(o => `
+            <span class="hedef-rozet">${simgeIcerigi(o)} ${guvenli(o.ad || "(adsız)")}
+              <button class="rozet-sil" data-hedef-sil="${o.id}" title="Çıkar">✕</button></span>`).join("")
+          : `<span class="bos-uyari kucuk">Henüz seçilmedi</span>`}
+      </div>
+      ${ekleModu === "sec" ? `<p class="ekle-ipucu">Haritada bir şekle tıkla — eklemek ve çıkarmak için</p>` : ""}
+      <button class="ikincil-btn ince tam ${ekleModu === "sec" ? "secili" : ""}" data-hedef-ekle>
+        ${ekleModu === "sec" ? "Seçmeyi bitir" : "⬭ Haritadan seç"}</button>`
+    : `
+      <select class="secici tam" data-hedef>
+        ${tur === "bolge"
+          ? Object.keys(BOLGELER).map(b => `<option value="B:${guvenli(b)}" ${hedef === "B:" + b ? "selected" : ""}>${guvenli(b)} Bölgesi</option>`).join("")
+          : IL_ADLARI.map(il => `<option value="I:${guvenli(il)}" ${hedef === "I:" + il ? "selected" : ""}>${guvenli(il)}</option>`).join("")}
+      </select>`}
     <div class="kart-altlik">
       <button class="metin-btn tehlike" data-sil>Sil</button>
     </div>`;
@@ -614,37 +663,72 @@ function soruKartiGovde(k) {
     const bas = govde.parentElement.querySelector(".kart-ad");
     if (bas) bas.textContent = e.target.value.trim() || "(boş soru)";
   });
-  $("[data-hedef]", govde).addEventListener("change", e => {
+
+  $$("[data-cevap-tur]", govde).forEach(b => b.addEventListener("click", () => {
+    const t = b.dataset.cevapTur;
+    if (t === soruHedefTuru(k.kayit)) return;
+    ekleModu = null;
+    if (t === "obje") { k.kayit.objeler = []; delete k.kayit.bolge; delete k.kayit.hedef; }
+    else if (t === "bolge") { k.kayit.bolge = Object.keys(BOLGELER)[0]; delete k.kayit.hedef; delete k.kayit.objeler; }
+    else { k.kayit.hedef = [IL_ADLARI[0]]; delete k.kayit.bolge; delete k.kayit.objeler; }
+    kutuphaneKaydet(); editorTazele();
+  }));
+
+  const sec = $("[data-hedef]", govde);
+  if (sec) sec.addEventListener("change", e => {
     const d = e.target.value;
     if (d.startsWith("B:")) { k.kayit.bolge = d.slice(2); delete k.kayit.hedef; }
     else { k.kayit.hedef = [d.slice(2)]; delete k.kayit.bolge; }
     kutuphaneKaydet();
   });
+
+  const ekle = $("[data-hedef-ekle]", govde);
+  if (ekle) ekle.addEventListener("click", () => {
+    ekleModu = ekleModu === "sec" ? null : "sec";
+    editorTazele();
+  });
+  $$("[data-hedef-sil]", govde).forEach(b => b.addEventListener("click", () => {
+    k.kayit.objeler = (k.kayit.objeler || []).filter(id => id !== b.dataset.hedefSil);
+    kutuphaneKaydet(); editorTazele();
+  }));
+
   $("[data-sil]", govde).addEventListener("click", () => {
     konu.sorular.splice(k.i, 1);
     acikKart = null;
+    ekleModu = null;
     kutuphaneKaydet(); editorTazele();
   });
   return govde;
 }
 
-/* ---- listenin altındaki ekleme satırı ---- */
+/* Haritadan seçim: açık yazılı sorunun cevap listesine ekler/çıkarır. */
+function soruHedefiDegistir(objeId) {
+  const konu = editorKonu();
+  const kayit = acikKart && acikKart.tip === "soru" ? (konu.sorular || [])[acikKart.i] : null;
+  if (!kayit) { ekleModu = null; return; }
+  if (!Array.isArray(kayit.objeler)) kayit.objeler = [];
+  const yer = kayit.objeler.indexOf(objeId);
+  const o = (konu.objeler || []).find(x => x.id === objeId);
+  if (yer >= 0) { kayit.objeler.splice(yer, 1); bildir(`${o && o.ad ? o.ad : "Şekil"} çıkarıldı`); }
+  else { kayit.objeler.push(objeId); bildir(`${o && o.ad ? o.ad : "Şekil"} eklendi`); }
+  kutuphaneKaydet(); editorTazele();
+}
+
+/* ---- listenin üstündeki ekleme satırı ---- */
 function kartEkleSatiriCiz() {
   const konu = editorKonu();
-  const birim = konu.ayar.cevapBirimi || "il";
   const satir = $("#kart-ekle-satir");
-  const yaziliOlur = !birimObjeMi(birim);   // il/bölge sorusu haritaya işaret koymadan da sorulabilir
   satir.innerHTML = `
-    <button class="ana-btn ince tam" id="btn-kart-yeni">＋ Yeni</button>
-    ${yaziliOlur ? `<button class="ikincil-btn ince tam" id="btn-soru-yeni">＋ Yazılı soru</button>` : ""}`;
+    <button class="ana-btn ince" id="btn-kart-yeni">＋ Yeni element</button>
+    <button class="ikincil-btn ince" id="btn-soru-yeni">＋ Soru</button>`;
 
   $("#btn-kart-yeni").addEventListener("click", yeniKart);
-  const y = $("#btn-soru-yeni");
-  if (y) y.addEventListener("click", () => {
+  $("#btn-soru-yeni").addEventListener("click", () => {
     konu.sorular.push({ metin: "", hedef: [IL_ADLARI[0]] });
     bekleyen = null;
     acikKart = { tip: "soru", i: konu.sorular.length - 1 };
     kutuphaneKaydet(); editorTazele();
+    odakla("[data-metin]");
   });
 }
 
@@ -913,6 +997,10 @@ function editorHaritaOlaylari() {
     }
 
     const objeEl = ev.target.closest(".obje");
+    if (objeEl && ekleModu === "sec") {
+      soruHedefiDegistir(objeEl.getAttribute("data-obje"));
+      return;
+    }
     if (objeEl) {
       const id = objeEl.getAttribute("data-obje");
       const o = editorKonu().objeler.find(x => x.id === id);
@@ -920,11 +1008,15 @@ function editorHaritaOlaylari() {
       const kart = kartlar(editorKonu()).find(k => k.tip === "obje" && k.objeler.some(x => x.id === id));
       bekleyen = null;
       acikKart = { tip: "obje", id: kart ? kart.objeler[0].id : id };
-      if (o.tip !== "cizgi" && o.tip !== "alan") {
+      if (o.tip === "cizgi" || o.tip === "alan") {
+        /* Şeklin tamamı taşınır; tek nokta düzeltmek için tutamaklar var. */
+        surukleme = { obje: o, tip: "sekil", tasindi: false, bas: n,
+                      basNoktalar: o.noktalar.map(p => p.slice()) };
+      } else {
         const k = objeKonum(editorKonu().objeler, o);
         surukleme = { obje: o, tip: "obje", tasindi: false, bas: n, basX: k.x, basY: k.y };
-        svg.setPointerCapture(ev.pointerId);
       }
+      svg.setPointerCapture(ev.pointerId);
       editorTazele();
       return;
     }
@@ -955,6 +1047,18 @@ function editorHaritaOlaylari() {
       return;
     }
 
+    if (surukleme.tip === "sekil") {
+      o.noktalar = surukleme.basNoktalar.map(p => [
+        Math.round((p[0] + dx) * 10) / 10, Math.round((p[1] + dy) * 10) / 10]);
+      const yol = o.tip === "alan" ? alanYolu(o.noktalar) : cizgiYolu(o.noktalar);
+      $$(`[data-obje="${o.id}"] path`, editorHarita.objeKat).forEach(el => el.setAttribute("d", yol));
+      $$(".tutamak", editorHarita.tutamakKat).forEach(t => {
+        const p = o.noktalar[+t.getAttribute("data-nokta")];
+        if (p) { t.setAttribute("cx", p[0]); t.setAttribute("cy", p[1]); }
+      });
+      return;
+    }
+
     o.x = surukleme.basX + dx;
     o.y = surukleme.basY + dy;
     editorHarita.objeleriCiz(editorKonu().objeler);
@@ -965,7 +1069,7 @@ function editorHaritaOlaylari() {
     if (!surukleme) return;
     const o = surukleme.obje;
     if (o && surukleme.tasindi) {
-      if (surukleme.tip === "nokta") {
+      if (surukleme.tip === "nokta" || surukleme.tip === "sekil") {
         o.iller = o.tip === "alan"
           ? alaninIlleri(editorHarita, o.noktalar)
           : cizgininIlleri(editorHarita, o.noktalar);

@@ -524,6 +524,11 @@ function iceHazirla(veri) {
       sonuc.sorular.push({ metin, bolge });
       return;
     }
+    /* Cevabı haritadaki şekiller olan soru: adlar konuya yazılırken
+       kimliklere çevrilir (objeler o sırada oluşuyor). */
+    const sekilAdlari = iceListe(s.objeler).concat(iceListe(s.sekiller));
+    if (sekilAdlari.length) { sonuc.sorular.push({ metin, objeAdlari: sekilAdlari }); return; }
+
     const hedef = [];
     [...iceListe(s.iller), ...iceListe(s.il), ...iceListe(s.hedef)].forEach(ad => {
       const il = iceIlBul(ad);
@@ -706,6 +711,20 @@ function iceKonuyaYaz(konu, sonuc, degistir) {
   if (degistir) { konu.objeler = []; konu.sorular = []; }
   konu.objeler.push(...sonuc.objeler);
   konu.sorular = (konu.sorular || []).concat(sonuc.sorular);
+
+  /* şekil adları -> kimlikler (objeler artık konunun içinde).
+     Hiçbiri bulunamazsa soru cevapsız kalırdı; atılır. */
+  konu.sorular = konu.sorular.filter(sr => {
+    if (!sr.objeAdlari) return true;
+    const idler = [];
+    sr.objeAdlari.forEach(ad => {
+      const o = konu.objeler.find(x => iceKatla(x.ad || "") === iceKatla(ad));
+      if (o && !idler.includes(o.id)) idler.push(o.id);
+    });
+    delete sr.objeAdlari;
+    sr.objeler = idler;
+    return idler.length > 0;
+  });
   Object.assign(konu, sonuc.konu);
   Object.assign(konu.ayar, sonuc.ayar);
   konuAyarUygula(konu);                      // kaydeder, açık harita varsa tazeler

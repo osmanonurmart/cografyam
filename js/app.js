@@ -625,6 +625,21 @@ function sorulariUret(konu) {
      sorunun tıklanacak bir objesi yoktur. */
   const varsayilan = birimObjeMi(birim) ? "il" : birim;
   (konu.sorular || []).forEach(s => {
+    /* Hedefi haritadaki şekiller olan soru: birden fazla şekil tek soruda
+       toplanır, hepsi bulunmalı. Şekillerin kendi soruları bundan ayrıdır. */
+    if ((s.objeler || []).length) {
+      const idler = s.objeler.filter(id => (konu.objeler || []).some(o => o.id === id));
+      if (!idler.length) return;
+      const iller = [];
+      idler.forEach(id => {
+        const o = konu.objeler.find(x => x.id === id);
+        (o.iller || []).forEach(il => { if (!iller.includes(il)) iller.push(il); });
+      });
+      liste.push({ metin: s.metin, birim: birimObjeMi(birim) ? birim : "obje",
+                   hedefIller: iller, hedefObjeler: idler.slice(),
+                   objeId: idler[0], objeIdler: idler.slice() });
+      return;
+    }
     if (s.bolge) {
       liste.push({ metin: s.metin, birim: "bolge", bolge: s.bolge,
                    hedefIller: (BOLGELER[s.bolge] || []).slice(), objeIdler: [] });

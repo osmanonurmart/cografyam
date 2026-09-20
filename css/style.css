@@ -1371,7 +1371,20 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .kart-altlik{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:9px}
 .metin-btn.tehlike{color:#fca5a5}
 
-.kart-ekle-satir{display:flex;flex-direction:column;gap:7px;margin-top:10px}
+.kart-ekle-satir{display:flex;gap:7px;margin-bottom:10px}
+.kart-ekle-satir>button{flex:1;min-width:0;white-space:nowrap}
+
+/* yazılı sorunun haritadan seçilmiş cevapları */
+.hedef-listesi{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}
+.hedef-rozet{
+  display:inline-flex;align-items:center;gap:5px;padding:3px 5px 3px 8px;
+  border:1px solid var(--line);border-radius:999px;background:var(--panel2);font-size:13px;
+}
+.rozet-sil{
+  border:0;background:none;color:var(--sonuk);cursor:pointer;font-size:12px;
+  line-height:1;padding:2px 3px;border-radius:50%;
+}
+.rozet-sil:hover{background:var(--panel2);color:var(--kirmizi)}
 
 /* kart simgesi düzenlenebilir: köşesinde kalem */
 .kart-simge.duzenlenir{
