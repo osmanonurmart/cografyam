@@ -132,9 +132,14 @@ açılış çalışmazdı.
   gün içinde değişmez; bilinemeyen soru ertesi günün başına yazılır. Sıra
   KARIŞIKTIR (konu konu değil) ve her yeni turda yeniden karışır. Soru süresi
   metin uzunluğundan tahmin edilir, ölçülen sürelerle kendini ayarlar.
-- **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. İki kez üst üste
-  doğru bilinen soru öğrenilmiş sayılır ve sonraki turlarda atlanır; yanlış
-  bilinirse sayaç sıfırlanır ve soru geri döner.
+- **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. Yalnızca Günlük
+  Tekrar'daki cevaplar sayılır (konu çalışması saymaz — kullanıcının kararı).
+  `ogrenildi[anahtar]` üst üste doğru serisidir; 2 ve üstü "öğrenildi".
+  Öğrenilen soru atlanmaz, seyrelir: son sorulduğu turdan (`sonTur`) seri
+  kadar tur sonra gelir — 2 turda bir, bilirse 3, sonra 4… Yanlışta seri 0,
+  her turda gelir. Bir soru turda bir kez geldiği için öğrenilmesi en az iki
+  tur ister. `deneme[anahtar] = [doğru, yanlış]` durum ekranında konuya
+  dokununca soru soru gösterilir; zayıf konular bu orana göre sıralanır.
 - **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
   `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
   `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette

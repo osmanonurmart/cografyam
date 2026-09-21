@@ -6,13 +6,16 @@
    dolana kadar sıradan soru alınır; bilinemeyenler ertesi günün başına
    yazılır. Gün içinde liste DEĞİŞMEZ — "bugün kaç kaldı" oynamasın.
 
-   İki kez üst üste doğru bilinen soru öğrenilmiş sayılır ve sonraki
-   turlarda atlanır; yanlış bilinirse sayaç sıfırlanır ve geri döner.
+   İki kez üst üste doğru bilinen soru öğrenilmiş sayılır ve gittikçe
+   seyrek sorulur: seri (üst üste doğru sayısı) kadar turda bir — önce 2
+   turda bir, bilirsen 3, sonra 4… Yanlış bilinirse seri sıfırlanır ve soru
+   her turda gelmeye döner. Yalnızca Günlük Tekrar'daki cevaplar sayılır.
 
    Durum kişiye özeldir: ayarlar.tekrar[profilId]
      { sinav, dakika, sira[], pos, tur, gun, liste[], yapilan[],
        bilinemeyen[], borc[], borcSayisi, gunBasi{pos,tur,borc},
-       ogrenildi{anahtar:0-2}, hiz{tahmin,gercek,n} }
+       ogrenildi{anahtar:seri}, sonTur{anahtar:tur}, listeTur{anahtar:tur},
+       deneme{anahtar:[doğru, yanlış]}, hiz{tahmin,gercek,n} }
 
    Mantığın tam anlatımı: "Günlük görev (sınav planı) — taşınabilir mantık".
    ========================================================== */
@@ -118,6 +121,14 @@ function tekrarDurum() {
     t.gun = "";                          // günün listesi yeni mantıkla kurulsun
   }
   if (!Array.isArray(t.liste)) { t.liste = []; t.gun = ""; }
+  if (!t.deneme) {
+    /* Soru başına doğru/yanlış sayısı sonradan eklendi. Geçmişi elde kalan
+       izlerden başlat: bugün bilinemeyenler 1 yanlış, serisi olanlar seri
+       kadar doğru (seri = üst üste doğru, en az o kadar doğru var demek). */
+    t.deneme = {};
+    Object.entries(t.ogrenildi || {}).forEach(([a, seri]) => { if (seri > 0) t.deneme[a] = [seri, 0]; });
+    (t.bilinemeyen || []).forEach(a => { const d = t.deneme[a] || [0, 0]; d[1] = Math.max(d[1], 1); t.deneme[a] = d; });
+  }
 
   const ogeler = tekrarOgeler();
   tekrarSirayiGuncelle(t, ogeler);
@@ -128,6 +139,17 @@ function tekrarDurum() {
 }
 
 function tekrarOgrenildiMi(t, anahtar) { return (t.ogrenildi[anahtar] || 0) >= TEKRAR_BILME; }
+
+/* Bu turda sorulma sırası gelmiş mi? Öğrenilmemiş soru her turda gelir.
+   Öğrenilmiş soru, son sorulduğu turdan "seri" kadar tur sonra gelir:
+   seri 2 → 2 turda bir, 3 → 3 turda bir… Son turu bilinmeyen (eski kayıt)
+   bir kez sorulur, sonrası kendiliğinden oturur. */
+function tekrarSirasiGeldi(t, anahtar, tur) {
+  const seri = t.ogrenildi[anahtar] || 0;
+  if (seri < TEKRAR_BILME) return true;
+  const son = (t.sonTur || {})[anahtar];
+  return son == null || tur - son >= seri;
+}
 
 /* ---------------- günün listesi ---------------- */
 function tekrarYeniGun(t, ogeler) {
@@ -154,30 +176,33 @@ function tekrarListeyiDoldur(t, ogeler) {
   const butce = (t.dakika || 60) * 60;
   const katsayi = tekrarKatsayi(t);
   const liste = [];
+  const listeTur = {};                 // her soru hangi turun parçası olarak alındı
   const eklenen = new Set();
   let kullanilan = 0, borctan = 0, yeniTur = false;
   let pos = bas.pos, tur = bas.tur;
   const borc = bas.borc.filter(a => ogeler.has(a));
 
-  const al = anahtar => {
+  const al = (anahtar, hangiTur) => {
     if (eklenen.has(anahtar)) return;
     eklenen.add(anahtar);
     liste.push(anahtar);
+    listeTur[anahtar] = hangiTur;
     kullanilan += tekrarSure(ogeler.get(anahtar), katsayi);
   };
 
-  while (borc.length && (!liste.length || kullanilan < butce)) { al(borc.shift()); borctan++; }
+  while (borc.length && (!liste.length || kullanilan < butce)) { al(borc.shift(), bas.tur); borctan++; }
 
   for (let güvenlik = 0; güvenlik < t.sira.length; güvenlik++) {
     if (liste.length && kullanilan >= butce) break;
     if (pos >= t.sira.length) { pos = 0; tur++; yeniTur = true; }
     const anahtar = t.sira[pos++];
-    if (!tekrarOgrenildiMi(t, anahtar)) al(anahtar);      // öğrenilenler turda atlanır
+    if (tekrarSirasiGeldi(t, anahtar, tur)) al(anahtar, tur);   // öğrenilenler seyrek gelir
   }
 
   /* her yeni turda sıra yeniden karışsın — aynı diziliş tekrar etmesin */
   if (yeniTur) t.karisik = false;
   t.liste = liste;
+  t.listeTur = listeTur;
   t.borc = borc;
   t.borcSayisi = borctan;
   t.pos = pos;
@@ -231,13 +256,21 @@ function tekrarOzet(t) {
 function tekrarKonuOzeti(t, ogeler) {
   const konular = new Map();
   (ogeler || tekrarOgeler()).forEach(oge => {
-    const k = konular.get(oge.konu.id) || { konu: oge.konu, toplam: 0, ogrenilen: 0 };
+    const k = konular.get(oge.konu.id) ||
+      { konu: oge.konu, toplam: 0, ogrenilen: 0, yolda: 0, denenen: 0, dogru: 0, yanlis: 0 };
     k.toplam++;
-    if (tekrarOgrenildiMi(t, oge.anahtar)) k.ogrenilen++;
+    const seri = t.ogrenildi[oge.anahtar] || 0;
+    if (seri >= TEKRAR_BILME) k.ogrenilen++;
+    else if (seri > 0) k.yolda++;
+    const d = (t.deneme || {})[oge.anahtar];
+    if (d) { k.denenen++; k.dogru += d[0]; k.yanlis += d[1]; }
     konular.set(oge.konu.id, k);
   });
   return [...konular.values()].map(k =>
-    Object.assign(k, { yuzde: k.toplam ? Math.round(100 * k.ogrenilen / k.toplam) : 0 }));
+    Object.assign(k, {
+      yuzde: k.toplam ? Math.round(100 * k.ogrenilen / k.toplam) : 0,
+      oran: k.dogru + k.yanlis ? k.dogru / (k.dogru + k.yanlis) : null
+    }));
 }
 
 /* ---------------- ana ekran kartı ---------------- */
@@ -282,7 +315,12 @@ function tekrarEkraniCiz() {
   const o = tekrarOzet(t);
   const p = aktifProfil();
   const konular = tekrarKonuOzeti(t, o.ogeler).sort((a, b) => a.yuzde - b.yuzde || b.toplam - a.toplam);
-  const zayif = konular.filter(k => k.yuzde < 100).slice(0, 3);
+  /* Zayıf konu: Günlük Tekrar'da doğru bilme oranı en düşük olanlar. Hiç
+     sorulmamış konu zayıf sayılmaz — öğrenilme yüzdesi herkes %0'dayken
+     bütün konular zayıf görünüyordu. */
+  const zayif = konular.filter(k => k.denenen >= 3 && k.oran < 1)
+    .sort((a, b) => a.oran - b.oran || b.yanlis - a.yanlis).slice(0, 3);
+  const yolda = o.ogeler.size ? t.sira.filter(a => { const s = t.ogrenildi[a] || 0; return s > 0 && s < TEKRAR_BILME; }).length : 0;
   const dk = t.dakika || 60;
   const gerekenDk = o.gelecekGun === 0 ? null : Math.ceil(
     (1 - o.turIlerlemesi) * o.toplam * o.ortSure / Math.max(1, o.kalanGun - 1) / 60);
@@ -318,11 +356,14 @@ function tekrarEkraniCiz() {
     <input type="date" class="kucuk-alan" id="tekrar-sinav" value="${t.sinav}">
 
     <h2 class="bolum-baslik">Öğrenilen sorular</h2>
-    <p class="tekrar-tahmin"><b>${o.ogrenilen}/${o.toplam}</b> soru öğrenildi
-      <span class="ince">İki kez üst üste doğru bilinen soru sonraki turlarda atlanır; yanlış bilirsen geri döner.</span></p>
+    <p class="tekrar-tahmin"><b>${o.ogrenilen}/${o.toplam}</b> soru öğrenildi${yolda ? ` · <b>${yolda}</b> yolda (1 kez doğru)` : ""}
+      <span class="ince">İki kez üst üste doğru bilinen soru öğrenilir ve gittikçe seyrek sorulur:
+        önce 2 turda bir, yine bilirsen 3, sonra 4 turda bir… Yanlış bilirsen her turda gelmeye döner.
+        Bir soru her turda bir kez geldiği için öğrenilmesi için en az iki tur gerekir.
+        Yalnızca Günlük Tekrar'daki cevaplar sayılır.</span></p>
 
     ${zayif.length ? `
-      <h2 class="bolum-baslik">En zayıf konular</h2>
+      <h2 class="bolum-baslik">En zayıf konular <small class="ince">doğru bilme oranına göre</small></h2>
       <div class="tekrar-liste">${zayif.map(k => tekrarSatiri(k, true)).join("")}</div>` : ""}
 
     <h2 class="bolum-baslik">Tüm konular</h2>
@@ -330,6 +371,14 @@ function tekrarEkraniCiz() {
 
   const basla = $("#btn-tekrar-basla");
   if (basla) basla.addEventListener("click", () => tekrarBaslat());
+  $$("#tekrar-govde .tekrar-satir[data-konu]").forEach(satir => satir.addEventListener("click", () => {
+    const acik = satir.nextElementSibling && satir.nextElementSibling.classList.contains("tekrar-detay");
+    $$("#tekrar-govde .tekrar-detay").forEach(d => d.remove());
+    $$("#tekrar-govde .tekrar-satir.acik").forEach(s => s.classList.remove("acik"));
+    if (acik) return;
+    satir.classList.add("acik");
+    satir.insertAdjacentHTML("afterend", tekrarKonuDetay(t, o.ogeler, satir.dataset.konu));
+  }));
   $$("#tekrar-sure-secim .secenek").forEach(b =>
     b.addEventListener("click", () => tekrarSureAyarla(+b.dataset.dk)));
   $("#tekrar-sinav").addEventListener("change", e => tekrarSinavAyarla(e.target.value));
@@ -337,14 +386,34 @@ function tekrarEkraniCiz() {
 
 function tekrarSatiri(k, vurgu) {
   return `
-    <div class="tekrar-satir${vurgu ? " zayif" : ""}">
+    <div class="tekrar-satir tiklanir${vurgu ? " zayif" : ""}" data-konu="${guvenli(k.konu.id)}">
       <span class="ts-ikon">${guvenli(k.konu.ikon)}</span>
       <span class="ts-yazi">
         <span class="ts-ad">${guvenli(k.konu.ad)}</span>
         <span class="ts-cubuk"><span style="width:${k.yuzde}%;background:${guvenli(k.konu.renk)}"></span></span>
       </span>
-      <span class="ts-sayi">%${k.yuzde}<small>${k.ogrenilen}/${k.toplam}</small></span>
+      <span class="ts-sayi">${vurgu && k.oran != null ? `%${Math.round(100 * k.oran)} doğru` : `%${k.yuzde}`}<small>${k.ogrenilen}/${k.toplam} öğrenildi${k.yolda ? ` · ${k.yolda} yolda` : ""}</small></span>
     </div>`;
+}
+
+/* Konuya dokununca: o konudaki her soru, kaç kez doğru / yanlış bilindiği
+   ve durumu. Önce en çok yanlış yapılanlar, hiç sorulmayanlar en sonda. */
+function tekrarKonuDetay(t, ogeler, konuId) {
+  const satirlar = [...ogeler.values()].filter(o => o.konu.id === konuId).map(o => {
+    const d = (t.deneme || {})[o.anahtar] || [0, 0];
+    const seri = t.ogrenildi[o.anahtar] || 0;
+    return { metin: o.soru.metin, dogru: d[0], yanlis: d[1], seri };
+  }).sort((a, b) => (b.yanlis - a.yanlis) || ((a.dogru + a.yanlis === 0) - (b.dogru + b.yanlis === 0))
+                    || (a.seri - b.seri));
+  const durumu = r => r.seri >= TEKRAR_BILME ? `<span class="td-rozet ogrenildi">öğrenildi</span>`
+                    : r.seri > 0 ? `<span class="td-rozet yolda">yolda</span>`
+                    : r.dogru + r.yanlis ? "" : `<span class="td-rozet yok">sorulmadı</span>`;
+  return `<div class="tekrar-detay">${satirlar.map(r => `
+      <div class="td-satir">
+        <span class="td-metin">${guvenli(r.metin)}</span>
+        ${durumu(r)}
+        <span class="td-sayi"><b class="d">✓ ${r.dogru}</b><b class="y">✕ ${r.yanlis}</b></span>
+      </div>`).join("")}</div>`;
 }
 
 /* ---------------- çalışma ---------------- */
@@ -409,7 +478,13 @@ function tekrarSonucYaz(soru, basarili) {
     }
   }
 
-  t.ogrenildi[anahtar] = basarili ? Math.min(TEKRAR_BILME, (t.ogrenildi[anahtar] || 0) + 1) : 0;
+  t.ogrenildi[anahtar] = basarili ? Math.min(20, (t.ogrenildi[anahtar] || 0) + 1) : 0;
+  if (!t.sonTur) t.sonTur = {};
+  t.sonTur[anahtar] = (t.listeTur || {})[anahtar] ?? t.tur;
+  if (!t.deneme) t.deneme = {};
+  const d = t.deneme[anahtar] || [0, 0];
+  d[basarili ? 0 : 1]++;
+  t.deneme[anahtar] = d;
   if (t.liste.includes(anahtar)) {
     if (!t.yapilan.includes(anahtar)) t.yapilan.push(anahtar);
     if (!basarili && !t.bilinemeyen.includes(anahtar)) t.bilinemeyen.push(anahtar);

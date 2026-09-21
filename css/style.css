@@ -1456,3 +1456,18 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 }
 .konum-cerceve:hover{opacity:.85}
 .konum-cerceve.secili{filter:none;opacity:1;border-color:var(--mavi);background:#1d305a}
+
+/* Günlük tekrar: konuya dokununca soru soru doğru/yanlış */
+.tekrar-satir.tiklanir{cursor:pointer}
+.tekrar-satir.acik{border-color:var(--mavi)}
+.tekrar-detay{margin:-2px 0 8px;padding:6px 8px;border-radius:12px;background:var(--bg2);
+  border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;max-height:360px;overflow:auto}
+.td-satir{display:flex;align-items:center;gap:8px;padding:5px 2px;border-bottom:1px solid var(--line);font-size:13px}
+.td-satir:last-child{border-bottom:0}
+.td-metin{flex:1;min-width:0}
+.td-sayi{display:flex;gap:8px;flex:none;font-variant-numeric:tabular-nums}
+.td-sayi .d{color:var(--yesil)} .td-sayi .y{color:var(--kirmizi)}
+.td-rozet{flex:none;font-size:10.5px;padding:2px 7px;border-radius:99px;border:1px solid var(--line)}
+.td-rozet.ogrenildi{color:var(--yesil);border-color:var(--yesil)}
+.td-rozet.yolda{color:var(--sari);border-color:var(--sari)}
+.td-rozet.yok{color:var(--sonuk)}
