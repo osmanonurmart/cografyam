@@ -140,6 +140,8 @@ açılış çalışmazdı.
   her turda gelir. Bir soru turda bir kez geldiği için öğrenilmesi en az iki
   tur ister. `deneme[anahtar] = [doğru, yanlış]` durum ekranında konuya
   dokununca soru soru gösterilir; zayıf konular bu orana göre sıralanır.
+  Günlük Tekrar'da **Geri kapalı** — geri dönüp yeniden cevaplamak aynı soruyu
+  iki kez saydırıyor, "üst üste" bir dakikada doluyordu.
 - **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
   `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
   `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette

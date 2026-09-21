@@ -2365,7 +2365,9 @@ function basliklariGuncelle() {
 }
 
 function dugmeleriGuncelle() {
-  $("#btn-geri").disabled   = durum.index === 0 || durum.duraklatildi;
+  /* Günlük Tekrar'da Geri kapalı: geri dönüp yeniden cevaplamak aynı soruyu
+     iki kez saydırıyor, "iki kez üst üste doğru" bir dakikada doluyordu. */
+  $("#btn-geri").disabled   = durum.index === 0 || durum.duraklatildi || !!durum.tekrarModu;
   $("#btn-pas").disabled    = durum.duraklatildi;
   $("#btn-durdur").disabled = durum.duraklatildi;
   $("#btn-devam").disabled  = !durum.duraklatildi;
@@ -2572,7 +2574,7 @@ function sonrakiSoru() {
 }
 
 function oncekiSoru() {
-  if (durum.index === 0) return;
+  if (durum.index === 0 || durum.tekrarModu) return;
   clearTimeout(durum.zamanlayici);
   durum.index--;
   durum.sonuclar[durum.index] = null;
