@@ -1471,3 +1471,34 @@ body.calismada .bildirim.gorunur{transform:translate(-50%,0)}
 .td-rozet.ogrenildi{color:var(--yesil);border-color:var(--yesil)}
 .td-rozet.yolda{color:var(--sari);border-color:var(--sari)}
 .td-rozet.yok{color:var(--sonuk)}
+
+/* ana ekran: basılı tutup sürüklerken yazı seçilmesin */
+.konu-grid,.konu-grid *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.konu-grid img{-webkit-user-drag:none}
+
+/* çalışma ekranı: sol alttaki bilgi kutusu — kapalıyken "— — —" */
+.bilgi-kutu{
+  position:absolute;left:14px;bottom:12px;z-index:5;width:min(300px,30%);max-height:46%;overflow:auto;
+  padding:9px 12px;border-radius:12px;background:rgba(15,25,48,.88);border:1px solid var(--line);
+  box-shadow:0 8px 24px rgba(0,0,0,.35);cursor:help;font-size:13px;line-height:1.45;
+  -webkit-user-select:text;user-select:text;
+}
+.bk-baslik{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--sonuk);margin-bottom:3px}
+.bk-maske{color:var(--sonuk);letter-spacing:.2em}
+.bk-metin{display:none;white-space:pre-line;color:var(--metin)}
+.bilgi-kutu.acik .bk-maske{display:none}
+.bilgi-kutu.acik .bk-metin{display:block}
+@media (hover:hover){
+  .bilgi-kutu:hover .bk-maske{display:none}
+  .bilgi-kutu:hover .bk-metin{display:block}
+}
+@media (max-width:640px),(orientation:landscape) and (max-height:500px){
+  .bilgi-kutu{left:8px;bottom:8px;width:min(220px,44%);font-size:12px;padding:7px 9px}
+}
+
+/* dışa aktarma penceresi */
+.disa-secenek{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;display:flex;flex-direction:column;gap:6px}
+.disa-baslik{font-weight:800}
+.disa-satir{display:flex;gap:8px}
+.disa-satir .secici{flex:1;min-width:0}
+.ice-hepsine{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--sonuk)}

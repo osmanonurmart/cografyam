@@ -11,7 +11,7 @@
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="css/style.css?s=81">
+<link rel="stylesheet" href="css/style.css?s=83">
 </head>
 <body>
 
@@ -249,7 +249,7 @@
       <div class="marka-kucuk">Düzenle</div>
       <div class="yedek-btnler">
         <button class="metin-btn ince" id="btn-ice-aktar" title="Konu kodu ya da tüm uygulama yedeği yükle">⬆ İçe aktar</button>
-        <button class="metin-btn ince" id="btn-disa-aktar" title="Her şeyin yedeğini .json olarak indir">⬇ Dışa aktar</button>
+        <button class="metin-btn ince" id="btn-disa-aktar" title="Konuları ya da tüm uygulamayı .json olarak indir">⬇ Dışa aktar</button>
       </div>
     </div>
     <span></span>
@@ -360,6 +360,9 @@
         <button class="tehlike-btn" data-cakisma="uzerine">Üzerine yaz</button>
         <button class="ikincil-btn" data-cakisma="iptal">İptal</button>
       </div>
+      <label class="ice-hepsine gizli" id="ice-hepsine-satir">
+        <input type="checkbox" id="ice-hepsine"> Kalan konuların hepsine aynısını uygula
+      </label>
     </div>
     <div id="ice-sonuc" class="ice-sonuc gizli"></div>
     <div class="modal-btnler">
@@ -388,6 +391,32 @@
 </div>
 
 <!-- ============ ONAY KUTUSU ============ -->
+<div class="modal gizli" id="modal-disa">
+  <div class="modal-kart">
+    <h3>Dışa aktar</h3>
+    <p class="ortu-alt">Konu kodları düzenlenip Düzenle › İçe aktar ile geri yüklenebilir.
+      "Üzerine yaz" seçersen konu aynı kalır, ilerlemen ve günlük tekrar kayıtların silinmez.</p>
+    <div class="disa-secenek">
+      <div class="disa-baslik">📄 Tek konu</div>
+      <div class="disa-satir">
+        <select class="secici" id="disa-konu"></select>
+        <button class="ana-btn ince" id="btn-disa-tek">İndir</button>
+      </div>
+    </div>
+    <div class="disa-secenek">
+      <div class="disa-baslik">📚 Tüm konular</div>
+      <p class="ortu-alt kucuk">Bütün konular tek dosyada. Geri yüklerken her konu için Yeni / Üzerine yaz sorulur; "hepsine uygula" ile bir kez seçersin.</p>
+      <button class="ana-btn ince tam" id="btn-disa-hepsi">Tüm konuları indir</button>
+    </div>
+    <div class="disa-secenek">
+      <div class="disa-baslik">💾 Tüm uygulama (yedek)</div>
+      <p class="ortu-alt kucuk">Konular, görseller, profiller, ayarlar ve ilerleme. Geri yüklerken "yalnızca içerik" seçebilirsin.</p>
+      <button class="ikincil-btn ince tam" id="btn-disa-yedek">Yedek indir</button>
+    </div>
+    <div class="modal-btnler"><button class="ikincil-btn" id="btn-disa-kapat">Kapat</button></div>
+  </div>
+</div>
+
 <div class="modal gizli" id="modal-onay">
   <div class="modal-kart dar-kart">
     <div class="onay-ikon" id="onay-ikon">⚠️</div>
@@ -395,6 +424,7 @@
     <p class="ortu-alt" id="onay-mesaj"></p>
     <div class="modal-btnler">
       <button class="tehlike-btn buyuk" id="btn-onay-evet">Sil</button>
+      <button class="ikincil-btn gizli" id="btn-onay-ucuncu"></button>
       <button class="ikincil-btn" id="btn-onay-hayir">Vazgeç</button>
     </div>
   </div>
@@ -413,20 +443,20 @@
 
 <div class="bildirim" id="bildirim"></div>
 
-<script src="js/harita-turkiye.js?s=81"></script>
-<script src="js/il-merkez.js?s=81"></script>
-<script src="js/komsular.js?s=81"></script>
-<script src="js/hazir-icerik.js?s=81"></script>
+<script src="js/harita-turkiye.js?s=83"></script>
+<script src="js/il-merkez.js?s=83"></script>
+<script src="js/komsular.js?s=83"></script>
+<script src="js/hazir-icerik.js?s=83"></script>
 <script src="js/vendor/firebase-app-compat.js"></script>
 <script src="js/vendor/firebase-firestore-compat.js"></script>
-<script src="js/surum.js?s=81"></script>
-<script src="js/firebase-config.js?s=81"></script>
-<script src="js/data.js?s=81"></script>
-<script src="js/app.js?s=81"></script>
-<script src="js/bulut.js?s=81"></script>
-<script src="js/editor.js?s=81"></script>
-<script src="js/konu-duzen.js?s=81"></script>
-<script src="js/profil.js?s=81"></script>
-<script src="js/tekrar.js?s=81"></script>
+<script src="js/surum.js?s=83"></script>
+<script src="js/firebase-config.js?s=83"></script>
+<script src="js/data.js?s=83"></script>
+<script src="js/app.js?s=83"></script>
+<script src="js/bulut.js?s=83"></script>
+<script src="js/editor.js?s=83"></script>
+<script src="js/konu-duzen.js?s=83"></script>
+<script src="js/profil.js?s=83"></script>
+<script src="js/tekrar.js?s=83"></script>
 </body>
 </html>

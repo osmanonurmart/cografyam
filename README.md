@@ -168,7 +168,15 @@ açılış çalışmazdı.
   vermeyi tamamen bozuyordu.
 - **Telefonu yatay çevirme zorunluluğu yok.** Dikeyde harita küçük kalır,
   yakınlaştırma onu kullanılabilir kılar.
-- **Yedek:** Düzenle ekranındaki ⬇ Dışa aktar / ⬆ İçe aktar.
+- **Dışa aktar** üç seçenekli: tek konu, tüm konular (`{konular:[…]}`), tüm
+  uygulama yedeği. Konu kodu `konuKodu()` ile içe aktarma biçiminde üretilir ve
+  kayıpsız geri gelir (35 konuda denendi: soru metinleri, konumlar, noktalar
+  aynı). Yedek geri yüklenirken "yalnızca içerik" (`ICERIK_ANAHTARLARI`)
+  seçilirse ilerleme, istatistik ve günlük tekrar korunur.
+- **Bilgi kutusu:** `obje.bilgi`, `soru.bilgi`, `konu.bilgi`. Çalışma
+  ekranında sol altta kapalı durur, üstüne gelince açılır. Metinler
+  `bilgiPaketi` ile adla eşleşerek eklenir — konu kodunu üzerine yazmak elle
+  yapılmış düzeltmeleri silerdi.
 - **Konuya içe aktar:** Konu Ayarları kartındaki ⬆ İçe aktar, tek bir JSON
   kodla (yapıştır ya da dosya) konuyu doldurur: ad/simge/renk, ayarlar,
   objeler (`"iller": ["Mardin", "Balıkesir/Bigadiç"]`) ve yazılı sorular

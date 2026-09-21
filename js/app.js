@@ -171,17 +171,23 @@ function onay(mesaj, secenek = {}) {
     evet.textContent = secenek.evet || "Sil";
     evet.className = secenek.tehlikeli === false ? "ana-btn buyuk" : "tehlike-btn buyuk";
     $("#btn-onay-hayir").textContent = secenek.hayir || "Vazgeç";
+    /* isteğe bağlı üçüncü seçenek: seçilirse "ucuncu" döner */
+    const ucuncu = $("#btn-onay-ucuncu");
+    ucuncu.textContent = secenek.ucuncu || "";
+    ucuncu.classList.toggle("gizli", !secenek.ucuncu);
     kutu.classList.remove("gizli");
 
     const kapat = (sonuc) => {
       kutu.classList.add("gizli");
       evet.removeEventListener("click", evetTik);
+      ucuncu.removeEventListener("click", ucuncuTik);
       $("#btn-onay-hayir").removeEventListener("click", hayirTik);
       kutu.removeEventListener("click", disTik);
       document.removeEventListener("keydown", tus);
       cozum(sonuc);
     };
     const evetTik = () => kapat(true);
+    const ucuncuTik = () => kapat("ucuncu");
     const hayirTik = () => kapat(false);
     const disTik = (e) => { if (e.target === kutu) kapat(false); };
     const tus = (e) => {
@@ -189,6 +195,7 @@ function onay(mesaj, secenek = {}) {
       if (e.key === "Enter") kapat(true);
     };
     evet.addEventListener("click", evetTik);
+    ucuncu.addEventListener("click", ucuncuTik);
     $("#btn-onay-hayir").addEventListener("click", hayirTik);
     kutu.addEventListener("click", disTik);
     document.addEventListener("keydown", tus);
@@ -635,16 +642,16 @@ function sorulariUret(konu) {
         const o = konu.objeler.find(x => x.id === id);
         (o.iller || []).forEach(il => { if (!iller.includes(il)) iller.push(il); });
       });
-      liste.push({ metin: s.metin, birim: birimObjeMi(birim) ? birim : "obje",
+      liste.push({ metin: s.metin, birim: birimObjeMi(birim) ? birim : "obje", bilgi: s.bilgi || "",
                    hedefIller: iller, hedefObjeler: idler.slice(),
                    objeId: idler[0], objeIdler: idler.slice() });
       return;
     }
     if (s.bolge) {
-      liste.push({ metin: s.metin, birim: "bolge", bolge: s.bolge,
+      liste.push({ metin: s.metin, birim: "bolge", bolge: s.bolge, bilgi: s.bilgi || "",
                    hedefIller: (BOLGELER[s.bolge] || []).slice(), objeIdler: [] });
     } else {
-      liste.push({ metin: s.metin, birim: varsayilan,
+      liste.push({ metin: s.metin, birim: varsayilan, bilgi: s.bilgi || "",
                    hedefIller: (s.hedef || []).slice(), objeIdler: [] });
     }
   });
@@ -717,6 +724,7 @@ async function gorselEkle(dosya) {
 ---------------------------------------------------------- */
 const YEDEK_ANAHTARLARI = ["profiller", "aktifProfil", "kutuphane", "ustKonular",
                            "ayarlar", "ilerleme", "gunluk", "palet", "pano"];
+const ICERIK_ANAHTARLARI = ["kutuphane", "ustKonular", "palet"];   // ilerlemeye dokunmayanlar
 
 function yedegiDisaAktar() {
   const yedek = { uygulama: "cografyam", surum: 1, tarih: new Date().toISOString(), veri: {} };
@@ -756,15 +764,21 @@ async function yedegiIceAktar(yedek) {
   const konuSayisi = (yedek.veri.kutuphane || []).length;
   const gorselSayisi = ((yedek.veri.palet || {}).gorseller || []).length;
   const tarih = yedek.tarih ? new Date(yedek.tarih).toLocaleString("tr-TR") : "bilinmiyor";
-  const tamam = await onay(
+  /* İçerik ile ilerleme ayrı seçilir: yedek alıp konuları düzenledikten sonra
+     geri yüklerken, aradaki ilerleme (istatistik, günlük tekrar) gitmesin. */
+  const secim = await onay(
     `${tarih} tarihli yedek: ${konuSayisi} konu, ${gorselSayisi} görsel.\n\n` +
-    `Şu andaki TÜM konuların, görsellerin, profillerin ve ilerlemen bununla değiştirilecek. Bu işlem geri alınamaz.`,
-    { baslik: "Yedeği geri yükle", ikon: "⬆", evet: "Geri yükle" }
+    `• Yalnızca içerik: konular, üst konular ve görseller yedektekiyle değişir; ` +
+    `ilerlemen, istatistiklerin ve günlük tekrarın olduğu gibi kalır.\n` +
+    `• İçerik + ilerleme: profiller, ayarlar ve ilerleme dahil her şey yedektekiyle değişir.\n\n` +
+    `Bu işlem geri alınamaz.`,
+    { baslik: "Yedeği geri yükle", ikon: "⬆", evet: "Yalnızca içerik", ucuncu: "İçerik + ilerleme", tehlikeli: false }
   );
-  if (!tamam) return;
+  if (!secim) return;
+  const anahtarlar = secim === "ucuncu" ? YEDEK_ANAHTARLARI : ICERIK_ANAHTARLARI;
 
   try {
-    YEDEK_ANAHTARLARI.forEach(a => {
+    anahtarlar.forEach(a => {
       if (Object.prototype.hasOwnProperty.call(yedek.veri, a)) {
         localStorage.setItem(ONEK + a, JSON.stringify(yedek.veri[a]));
       } else {
@@ -2137,9 +2151,46 @@ window.addEventListener("resize", () => {
   _mobilZaman = setTimeout(mobilDuzen, 120);
 });
 
+/* ----------------------------------------------------------
+   BİLGİ KUTUSU — haritanın sol alt köşesinde (Ege/Akdeniz açıkları boş)
+   Kapalıyken "— — —" görünür; fareyle üstüne gelince, dokunmatikte dokununca
+   açılır. Her soruda yeniden kapanır, yoksa cevabı ele verirdi.
+   Metin: yazılı sorunun kendi bilgisi → cevap objelerinin bilgileri (en çok
+   3 farklı metin) → konunun genel bilgisi. Hiçbiri yoksa kutu görünmez.
+---------------------------------------------------------- */
+function soruBilgisi(soru) {
+  const konu = durum.konu;
+  if (!soru || !konu) return "";
+  if (soru.bilgi) return soru.bilgi;
+  const metinler = [];
+  (soru.objeIdler || []).forEach(id => {
+    const o = (konu.objeler || []).find(x => x.id === id);
+    const b = o && (o.bilgi || "").trim();
+    if (b && !metinler.includes(b)) metinler.push(b);
+  });
+  if (metinler.length && metinler.length <= 3) return metinler.join("\n\n");
+  return (konu.bilgi || "").trim();
+}
+
+function bilgiKutusuCiz() {
+  const kutu = $("#bilgi-kutu");
+  if (!kutu) return;
+  const metin = soruBilgisi(durum.sorular[durum.index]);
+  kutu.classList.remove("acik");
+  kutu.classList.toggle("gizli", !metin);
+  $(".bk-metin", kutu).textContent = metin;
+}
+
 function haritayiHazirla() {
   if (calismaHarita) return calismaHarita;
   calismaHarita = new Harita($("#harita-alan"));
+
+  const bk = document.createElement("div");
+  bk.id = "bilgi-kutu";
+  bk.className = "bilgi-kutu gizli";
+  bk.innerHTML = `<div class="bk-baslik">ℹ Bilgi</div><div class="bk-maske">— — —</div><div class="bk-metin"></div>`;
+  bk.addEventListener("click", ev => { ev.stopPropagation(); bk.classList.toggle("acik"); });
+  $("#harita-alan").appendChild(bk);
 
   haritaZoomOlaylari(calismaHarita);
 
@@ -2332,6 +2383,7 @@ function soruyuGoster() {
   const soru = durum.sorular[durum.index];
   if (!soru) { bitir(); return; }
   if (durum.tekrarModu) tekrarKonuyuHazirla(soru);   // soru başka konudaysa harita değişir
+  bilgiKutusuCiz();
 
   $("#soru-metin").textContent = soru.metin;
   soruMetniSigdir();

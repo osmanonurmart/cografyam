@@ -357,6 +357,12 @@ function objeKartiGovde(k) {
       <button class="ikincil-btn ince tam" data-soru-ekle>＋ Soru ekle</button>
     </details>
 
+    <details class="kart-bolum" data-bolum="bilgi" ${acikBolumler.has("bilgi") ? "open" : ""}>
+      <summary>Bilgi kutusu ${ilk.bilgi ? "✓" : ""}</summary>
+      <p class="ekle-ipucu">Çalışırken haritanın sol altında kapalı durur; üstüne gelince açılır.</p>
+      <textarea class="kucuk-alan" data-bilgi rows="4" placeholder="Ör. Ria kıyı: akarsu vadilerinin deniz altında kalmasıyla oluşur…">${guvenli(ilk.bilgi || "")}</textarea>
+    </details>
+
     <details class="kart-bolum" data-bolum="gorunum" ${acikBolumler.has("gorunum") ? "open" : ""}>
       <summary>Görünüm</summary>
       ${sekilli ? `
@@ -516,6 +522,12 @@ function objeKartiOlaylari(govde, k) {
     hepsi("ekGoster", acik);
     editorTazele();
   });
+  const bilgiAlan = $("[data-bilgi]", govde);
+  if (bilgiAlan) bilgiAlan.addEventListener("input", e => {
+    k.objeler.forEach(o => { o.bilgi = e.target.value; });
+    kutuphaneKaydet();
+  });
+
   $("[data-soru-ekle]", govde).addEventListener("click", () => {
     if (!Array.isArray(ilk.sorular)) ilk.sorular = [];
     ilk.sorular.push({ metin: "" });
@@ -653,10 +665,16 @@ function soruKartiGovde(k) {
           ? Object.keys(BOLGELER).map(b => `<option value="B:${guvenli(b)}" ${hedef === "B:" + b ? "selected" : ""}>${guvenli(b)} Bölgesi</option>`).join("")
           : IL_ADLARI.map(il => `<option value="I:${guvenli(il)}" ${hedef === "I:" + il ? "selected" : ""}>${guvenli(il)}</option>`).join("")}
       </select>`}
+    <label class="alan-etiket">Bilgi kutusu</label>
+    <textarea class="kucuk-alan" data-soru-bilgi rows="3" placeholder="Çalışırken sol altta kapalı durur, üstüne gelince açılır">${guvenli(k.kayit.bilgi || "")}</textarea>
     <div class="kart-altlik">
       <button class="metin-btn tehlike" data-sil>Sil</button>
     </div>`;
 
+  $("[data-soru-bilgi]", govde).addEventListener("input", e => {
+    k.kayit.bilgi = e.target.value;
+    kutuphaneKaydet();
+  });
   $("[data-metin]", govde).addEventListener("input", e => {
     k.kayit.metin = e.target.value;
     kutuphaneKaydet();
@@ -1263,7 +1281,7 @@ function editorOlaylari() {
     simgeUygula({ tip: "gorsel", id: oge.id, ad: oge.ad, veri: oge.veri });
   });
 
-  $("#btn-disa-aktar").addEventListener("click", yedegiDisaAktar);
+  $("#btn-disa-aktar").addEventListener("click", disaAktarAc);
   /* konu kodu ya da tüm uygulama yedeği — hangisi olduğu içeride anlaşılır */
   $("#btn-ice-aktar").addEventListener("click", () => konuIceAc(null));
 

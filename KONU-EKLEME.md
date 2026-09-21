@@ -53,6 +53,7 @@ Her bölüm isteğe bağlı. Yazılmayan her şey olduğu gibi kalır.
 | `ikon` | Konunun simgesi | Herhangi bir emoji |
 | `renk` | Kart rengi | `#f59e0b` biçiminde, 6 haneli |
 | `aciklama` | Kısa açıklama | En çok 40 karakter |
+| `bilgi` | Konunun genel bilgisi (bilgi kutusu) | Objenin kendi bilgisi yoksa gösterilir |
 
 ## `ayar`
 
@@ -89,6 +90,9 @@ Haritaya konan her obje aynı zamanda bir sorudur.
 | `ekGoster` | `false` → sorunun sonundaki parantez çıkmaz | `false` |
 | `boyut` | Simge büyüklüğü, varsayılan 2 | `3` |
 | `sorular` | Otomatik soru yerine senin metnin(ler)in | `["Bakır nerede çıkarılır?"]` |
+| `bilgi` | Bilgi kutusu metni (en çok 1200 karakter) | `"Bakır: Murgul'da çıkarılır…"` |
+| `x`, `y`, `aci` | Konum ve açı (yalnızca tek ilde) | Dışa aktarılan koddan gelir |
+| `gorselId`, `baloncuklar` | Görsel ve baloncuklar | Dışa aktarılan koddan gelir |
 
 **İlçe, ile özel:** `"iller": ["Balıkesir/Bigadiç", "Eskişehir/Kırka"]`
 
@@ -170,6 +174,48 @@ kartlarında kalır, *"Hangisi Menteşe Dağları?"* soruları da sorulmaya
 devam eder.
 
 Cevabı olmayan (il, bölge ya da tanınan obje yazılmamış) soru atlanır.
+
+Yazılı sorulara da `"bilgi": "…"` eklenebilir.
+
+## Bilgi kutusu
+
+Çalışırken haritanın sol altında **ℹ Bilgi — — —** kutusu durur; fareyle
+üstüne gelince (telefonda dokununca) açılır, her soruda yeniden kapanır.
+Gösterilen metin: yazılı sorunun kendi `bilgi`si → cevap objelerinin
+`bilgi`leri (en çok 3 farklı metin) → konunun `bilgi`si. Hiçbiri yoksa kutu
+görünmez. Düzenle ekranında her kartta "Bilgi kutusu" bölümü vardır.
+
+### Bilgi paketi — yalnızca metinleri eklemek
+
+Konu kodu içe aktarmak objeleri yeniden yazar. Yalnızca bilgi metinlerini
+eklemek (şekillere, konumlara, sorulara dokunmadan) için Düzenle › İçe aktar'a:
+
+```json
+{ "bilgiPaketi": [
+  { "konu": "Kıyı Tipleri",
+    "bilgi": "Konunun genel bilgisi",
+    "objeler": { "Ria Kıyı": "Ria kıyı: …", "Boyuna Kıyı": "…" },
+    "sorular": { "Ria kıyılar hangileridir?": "…" } }
+] }
+```
+
+Konu ve obje **adıyla** eşleşir (Türkçe karakter/büyük harf önemsiz); `konu`
+bir ad listesi de olabilir. Bulunamayanlar pencerede yazılır.
+
+## Dışa aktarma ve geri yükleme
+
+Düzenle › **⬇ Dışa aktar** üç seçenek sunar:
+
+| Seçenek | Ne iner | Geri yükleme |
+|---|---|---|
+| Tek konu | Bu belgedeki biçimde konu kodu | İçe aktar › aynı adlı konu için Yeni / Üzerine yaz |
+| Tüm konular | `{ "konular": [konuKodu, …] }` | Her konu için sorulur; "kalanların hepsine uygula" ile bir kez |
+| Tüm uygulama | Yedek (ilerleme dahil) | "Yalnızca içerik" ya da "İçerik + ilerleme" |
+
+**İlerleme kaybolmaz:** "Üzerine yaz" konunun kimliğini korur; günlük tekrar
+kayıtları "konu + soru metni" ile tutulduğu için metni değiştirmediğin
+sorularda istatistik aynen kalır. Dışa aktar → düzenle → içe aktar kayıpsızdır
+(konumlar, şekiller, görseller, baloncuklar, bilgi metinleri geri gelir).
 
 ## Adlar nasıl eşleşir
 
