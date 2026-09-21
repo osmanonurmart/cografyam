@@ -2145,14 +2145,19 @@ function haritayiHazirla() {
 
   calismaHarita.svg.addEventListener("click", ev => {
     if (durum.zoomSurukledi) return;   // gezinme hareketi cevap sayılmasın
-    // obje modunda önce objeye bakılır
-    const objeEl = ev.target.closest(".obje[data-obje]");
-    if (objeEl) {
-      const soru = durum.sorular[durum.index];
-      if (soru && birimObjeMi(soru.birim)) { objeyeCevapla(objeEl.getAttribute("data-obje")); return; }
-    }
     const soru = durum.sorular[durum.index];
-    if (soru && birimObjeMi(soru.birim)) return;   // seçim birimi modunda iller tıklanmaz
+    if (soru && birimObjeMi(soru.birim)) {
+      /* Alan/çizgi sorusunda yalnızca o türdeki şekiller cevap sayılır.
+         Başka türden bir şekil (ör. çizgi konusunda görsel olarak duran
+         iklim alanları) tıklamayı yutmasın: tıklanan noktadaki şekiller
+         üstten alta taranır, türü uyan ilki cevaptır. */
+      const tip = soru.birim === "alan" || soru.birim === "cizgi" ? soru.birim : null;
+      const hedef = document.elementsFromPoint(ev.clientX, ev.clientY)
+        .map(el => el.closest && el.closest(".obje[data-obje]"))
+        .find(el => el && (!tip || el.classList.contains(tip)));
+      if (hedef) objeyeCevapla(hedef.getAttribute("data-obje"));
+      return;                                        // seçim birimi modunda iller tıklanmaz
+    }
     const g = ev.target.closest("g[data-plakakodu]");
     if (!g) return;
     const plaka = g.getAttribute("data-plakakodu");

@@ -78,6 +78,11 @@ açılış çalışmazdı.
   sürüklemek cevabı bozmaz. Alan/çizgi iki türlü taşınır: şeklin üstünden
   sürüklersem tamamı kayar, tutamaktan sürüklersem tek nokta oynar —
   ikisinde de bırakınca kapsadığı iller yeniden hesaplanır.
+- **Alan/çizgi sorusunda yalnızca o türdeki şekiller cevap sayılır.** Tıklanan
+  noktadaki şekiller `elementsFromPoint` ile üstten alta taranır, türü uyan ilki
+  cevaptır. Böylece çizgi konusuna görsel olarak konan alanlar (ör. Yağış
+  Rejimleri'ndeki iklim alanları) tıklamayı yutmaz, ıskalanan tıklama yanlış
+  sayılmaz.
 - **Yazılı sorunun cevabı haritadaki şekiller de olabilir** (`sorular[].objeler`,
   kimlik listesi). Düzenle'de soru kartındaki *Haritadan seç* ile toplanır,
   hepsi bulunmadan soru bitmez. Şekillerin kendi kartları ve soruları
