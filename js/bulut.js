@@ -30,6 +30,7 @@ const Bulut = {
   _db: null,
   _dinleyiciler: [],
   _bekleyen: new Set(),
+  _gonderilen: new Set(),   // şu an gönderimi süren anahtarlar
   _zaman: null,
   _uygulanan: false,    // snapshot uygularken geri gönderme döngüsünü kes
 
@@ -156,6 +157,12 @@ const Bulut = {
   },
 
   _yerelYaz(anahtar, deger) {
+    /* Yerelde gönderilmeyi bekleyen (ya da gönderimi süren) bir değişiklik
+       varsa gelen anlık görüntü UYGULANMAZ: bizim kopyamız daha yeni.
+       Yoksa sürükleme sırasında gelen bayat snapshot şekli eski yerine
+       döndürüyor, yazarken de kart listesi baştan kurulup imleç kaçıyordu.
+       Gönderim bitince Firestore güncel halini zaten yeniden yollar. */
+    if (this._bekleyen.has(anahtar) || this._gonderilen.has(anahtar)) return;
     this._uygulanan = true;
     try {
       localStorage.setItem(ONEK + anahtar, JSON.stringify(deger));
@@ -179,6 +186,12 @@ const Bulut = {
   async _gonder() {
     const anahtarlar = [...this._bekleyen];
     this._bekleyen.clear();
+    /* Çevrimdışıyken yazma sözü askıda kalabilir; anahtar sonsuza dek
+       "gönderiliyor" kalmasın diye 15 sn sonra kendiliğinden düşer. */
+    anahtarlar.forEach(a => {
+      this._gonderilen.add(a);
+      setTimeout(() => this._gonderilen.delete(a), 15000);
+    });
     for (const a of anahtarlar) {
       try { await this._anahtariGonder(a); }
       catch (e) {
@@ -191,6 +204,7 @@ const Bulut = {
           ? "Bulut değişikliği reddetti — bu değişiklik kaydedilmedi"
           : "Buluta gönderilemedi — bağlantıyı kontrol et");
       }
+      finally { this._gonderilen.delete(a); }
     }
   },
 

@@ -142,6 +142,16 @@ açılış çalışmazdı.
   dokununca soru soru gösterilir; zayıf konular bu orana göre sıralanır.
   Günlük Tekrar'da **Geri kapalı** — geri dönüp yeniden cevaplamak aynı soruyu
   iki kez saydırıyor, "üst üste" bir dakikada doluyordu.
+- **Gönderilmeyi bekleyen anahtarın üstüne snapshot yazılmaz** (`_bekleyen`,
+  `_gonderilen`). Yoksa sürükleme sırasında gelen bayat anlık görüntü şekli
+  eski yerine döndürüyor, Düzenle'de yazarken de kart listesi baştan kurulup
+  imleç kaçıyordu ("3 saniye sonra başka yere tıklamış gibi"). Gönderim
+  bitince Firestore güncel halini yeniden yollar; çevrimdışında askıda
+  kalmasın diye bayrak 15 sn sonra düşer.
+- **Düzenle'de yazarken kart listesi yenilenmez** (`editorTazeleKorumali`):
+  odak paneldeki bir alandayken yalnız harita tazelenir, tazeleme odak
+  çıkınca yapılır (focusout + 1 sn'lik saat; pencere odakta değilken
+  focusout gelmiyor).
 - **Firestore iç içe diziyi kabul etmez.** Alan/çizgi `noktalar` alanı
   `[[x, y], …]` — buluta `konuBuluta` ile düz dizi olarak gider,
   `konuBuluttan` ile çiftlere döner (`js/bulut.js`). Konular tek pakette

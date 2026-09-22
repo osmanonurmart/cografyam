@@ -3143,9 +3143,42 @@ function bulutVerisiGeldi(anahtar) {
   else if (aktif === "ekran-editor" && typeof editorTazele === "function") {
     konuSeciciDoldur($("#editor-konu"));
     $("#editor-konu").value = durum.editorKonuId;
-    editorTazele();
+    editorTazeleKorumali();
   }
 }
+
+/* Düzenle ekranında bir yazı kutusuna yazarken kart listesi baştan
+   kurulursa imleç kaçar ("başka yere tıklamış gibi"). Odak paneldeki bir
+   alandaysa yalnız harita tazelenir; tazeleme odak çıkınca yapılır. */
+let editorTazelemeBekliyor = false;
+
+function editorYaziliyorMu() {
+  const el = document.activeElement;
+  return !!(el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.closest("#ekran-editor"));
+}
+
+let editorTazelemeSaat = null;
+
+function editorTazeleKorumali() {
+  if (!editorYaziliyorMu()) { editorTazele(); return; }
+  editorTazelemeBekliyor = true;
+  if (typeof editorTazeleHafif === "function") editorTazeleHafif();
+  editorBekleyeniDene();
+}
+
+/* Odak alandan çıkınca bekleyen tazeleme yapılır. focusout hızlı yoldur;
+   pencere odakta değilken bu olay gelmeyebildiği için saat de bakar. */
+function editorBekleyeniDene() {
+  if (!editorTazelemeBekliyor || editorTazelemeSaat) return;
+  editorTazelemeSaat = setInterval(() => {
+    if (editorYaziliyorMu()) return;
+    clearInterval(editorTazelemeSaat); editorTazelemeSaat = null;
+    editorTazelemeBekliyor = false;
+    if (($("section.ekran.aktif") || {}).id === "ekran-editor" && typeof editorTazele === "function") editorTazele();
+  }, 1000);
+}
+
+document.addEventListener("focusout", () => setTimeout(editorBekleyeniDene, 80));
 
 /* Bulut kutusu: neyin ortak olduğunu anlatır */
 function bulutBilgisi() {
