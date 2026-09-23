@@ -6,15 +6,16 @@
    dolana kadar sıradan soru alınır; bilinemeyenler ertesi günün başına
    yazılır. Gün içinde liste DEĞİŞMEZ — "bugün kaç kaldı" oynamasın.
 
-   İki kez üst üste doğru bilinen soru öğrenilmiş sayılır ve gittikçe
-   seyrek sorulur: seri (üst üste doğru sayısı) kadar turda bir — önce 2
-   turda bir, bilirsen 3, sonra 4… Yanlış bilinirse seri sıfırlanır ve soru
-   her turda gelmeye döner. Yalnızca Günlük Tekrar'daki cevaplar sayılır.
+   Öğrenme GÜN üzerinden ölçülür: iki AYRI günde üst üste doğru bilinen
+   soru öğrenilmiş sayılır (aynı gün ikinci kez doğru bilmek saymaz).
+   Sonra gittikçe seyrek sorulur: 3, 6, 10, 15 gün. Yanlış bilinirse seri
+   sıfırlanır ve soru her turda gelmeye döner.
+   Yalnızca Günlük Tekrar'daki cevaplar sayılır.
 
    Durum kişiye özeldir: ayarlar.tekrar[profilId]
      { sinav, dakika, sira[], pos, tur, gun, liste[], yapilan[],
        bilinemeyen[], borc[], borcSayisi, gunBasi{pos,tur,borc},
-       ogrenildi{anahtar:seri}, sonTur{anahtar:tur}, listeTur{anahtar:tur},
+       ogrenildi{anahtar:seri}, sonGun{anahtar:"YYYY-AA-GG"},
        deneme{anahtar:[doğru, yanlış]}, hiz{tahmin,gercek,n} }
 
    Mantığın tam anlatımı: "Günlük görev (sınav planı) — taşınabilir mantık".
@@ -22,7 +23,8 @@
 
 const TEKRAR_SINAV = "2026-10-01";
 const TEKRAR_DAKIKALAR = [15, 30, 45, 60, 90, 120];
-const TEKRAR_BILME = 2;              // kaç kez üst üste doğru = öğrenildi
+const TEKRAR_BILME = 2;              // kaç AYRI günde üst üste doğru = öğrenildi
+const TEKRAR_ARALIK = [3, 6, 10, 15];  // öğrendikten sonra kaç gün sonra tekrar sorulur
 const SURE_TABAN = 4;                // sn — okuma, düşünme, tıklama
 const SURE_KARAKTER = 15;            // karakter/sn
 const SURE_HEDEF_EK = 1.5;           // sn — ikinci ve sonraki her hedef için
@@ -121,6 +123,7 @@ function tekrarDurum() {
     t.gun = "";                          // günün listesi yeni mantıkla kurulsun
   }
   if (!Array.isArray(t.liste)) { t.liste = []; t.gun = ""; }
+  if (t.sonTur || t.listeTur) { delete t.sonTur; delete t.listeTur; }   // tur temelli eski alanlar
   if (!t.deneme) {
     /* Soru başına doğru/yanlış sayısı sonradan eklendi. Geçmişi elde kalan
        izlerden başlat: bugün bilinemeyenler 1 yanlış, serisi olanlar seri
@@ -141,15 +144,21 @@ function tekrarDurum() {
 
 function tekrarOgrenildiMi(t, anahtar) { return (t.ogrenildi[anahtar] || 0) >= TEKRAR_BILME; }
 
-/* Bu turda sorulma sırası gelmiş mi? Öğrenilmemiş soru her turda gelir.
-   Öğrenilmiş soru, son sorulduğu turdan "seri" kadar tur sonra gelir:
-   seri 2 → 2 turda bir, 3 → 3 turda bir… Son turu bilinmeyen (eski kayıt)
-   bir kez sorulur, sonrası kendiliğinden oturur. */
-function tekrarSirasiGeldi(t, anahtar, tur) {
+/* Sorulma sırası gelmiş mi? Öğrenilmemiş soru her turda gelir. Öğrenilmiş
+   soru, en son doğru bilindiği GÜNDEN şu kadar gün sonra gelir:
+   2. doğru → 3 gün, 3. → 6, 4. → 10, sonrası 15. Günü bilinmeyen eski
+   kayıt bir kez sorulur, sonrası kendiliğinden oturur. */
+function tekrarBeklemeGunu(seri) {
+  const i = Math.min(seri - TEKRAR_BILME, TEKRAR_ARALIK.length - 1);
+  return TEKRAR_ARALIK[Math.max(0, i)];
+}
+
+function tekrarSirasiGeldi(t, anahtar) {
   const seri = t.ogrenildi[anahtar] || 0;
   if (seri < TEKRAR_BILME) return true;
-  const son = (t.sonTur || {})[anahtar];
-  return son == null || tur - son >= seri;
+  const son = (t.sonGun || {})[anahtar];
+  if (!son) return true;
+  return tekrarGunFarki(son, tekrarBugun()) >= tekrarBeklemeGunu(seri);
 }
 
 /* Eski kuralla kurulmuş günün listesinde aynı metin iki kez olabilir
@@ -197,7 +206,6 @@ function tekrarListeyiDoldur(t, ogeler) {
   const butce = (t.dakika || 60) * 60;
   const katsayi = tekrarKatsayi(t);
   const liste = [];
-  const listeTur = {};                 // her soru hangi turun parçası olarak alındı
   const eklenen = new Set();
   /* Aynı soru metni birden fazla konuda olabilir (ör. "Hangisi Uludağ?"
      Kıvrım Dağlar, Buzul Dağları ve Kayak Merkezleri'nde). Bunlar ayrı
@@ -209,7 +217,7 @@ function tekrarListeyiDoldur(t, ogeler) {
   let pos = bas.pos, tur = bas.tur;
   const borc = bas.borc.filter(a => ogeler.has(a));
 
-  const al = (anahtar, hangiTur) => {
+  const al = (anahtar) => {
     if (eklenen.has(anahtar)) return false;
     const oge = ogeler.get(anahtar);
     const metin = oge ? (oge.soru.metin || "").trim() : "";
@@ -217,7 +225,6 @@ function tekrarListeyiDoldur(t, ogeler) {
     metinler.add(metin);
     eklenen.add(anahtar);
     liste.push(anahtar);
-    listeTur[anahtar] = hangiTur;
     kullanilan += tekrarSure(oge, katsayi);
     return true;
   };
@@ -225,20 +232,19 @@ function tekrarListeyiDoldur(t, ogeler) {
   const kalanBorc = [];              // metni bugün zaten sorulan borçlar yarına kalır
   while (borc.length && (!liste.length || kullanilan < butce)) {
     const a = borc.shift();
-    if (al(a, bas.tur)) borctan++; else kalanBorc.push(a);
+    if (al(a)) borctan++; else kalanBorc.push(a);
   }
 
   for (let güvenlik = 0; güvenlik < t.sira.length; güvenlik++) {
     if (liste.length && kullanilan >= butce) break;
     if (pos >= t.sira.length) { pos = 0; tur++; yeniTur = true; }
     const anahtar = t.sira[pos++];
-    if (tekrarSirasiGeldi(t, anahtar, tur)) al(anahtar, tur);   // öğrenilenler seyrek gelir
+    if (tekrarSirasiGeldi(t, anahtar)) al(anahtar);        // öğrenilenler seyrek gelir
   }
 
   /* her yeni turda sıra yeniden karışsın — aynı diziliş tekrar etmesin */
   if (yeniTur) t.karisik = false;
   t.liste = liste;
-  t.listeTur = listeTur;
   t.borc = kalanBorc.concat(borc);
   t.borcSayisi = borctan;
   t.pos = pos;
@@ -393,9 +399,9 @@ function tekrarEkraniCiz() {
 
     <h2 class="bolum-baslik">Öğrenilen sorular</h2>
     <p class="tekrar-tahmin"><b>${o.ogrenilen}/${o.toplam}</b> soru öğrenildi${yolda ? ` · <b>${yolda}</b> yolda (1 kez doğru)` : ""}
-      <span class="ince">İki kez üst üste doğru bilinen soru öğrenilir ve gittikçe seyrek sorulur:
-        önce 2 turda bir, yine bilirsen 3, sonra 4 turda bir… Yanlış bilirsen her turda gelmeye döner.
-        Bir soru her turda bir kez geldiği için öğrenilmesi için en az iki tur gerekir.
+      <span class="ince">İki AYRI günde üst üste doğru bilinen soru öğrenilmiş sayılır
+        (aynı gün ikinci kez bilmek saymaz). Sonra seyrelerek sorulur: 3 gün, yine bilirsen 6,
+        sonra 10, sonra 15 gün. Yanlış bilirsen her turda gelmeye döner.
         Yalnızca Günlük Tekrar'daki cevaplar sayılır.</span></p>
 
     ${zayif.length ? `
@@ -514,9 +520,13 @@ function tekrarSonucYaz(soru, basarili) {
     }
   }
 
-  t.ogrenildi[anahtar] = basarili ? Math.min(20, (t.ogrenildi[anahtar] || 0) + 1) : 0;
-  if (!t.sonTur) t.sonTur = {};
-  t.sonTur[anahtar] = (t.listeTur || {})[anahtar] ?? t.tur;
+  /* Seri GÜN sayar: aynı gün ikinci kez doğru bilmek seriyi artırmaz,
+     çünkü "öğrendim" demek için araya bir gecenin girmesi gerekir. */
+  if (!t.sonGun) t.sonGun = {};
+  const bugun = tekrarBugun();
+  if (!basarili) t.ogrenildi[anahtar] = 0;
+  else if (t.sonGun[anahtar] !== bugun) t.ogrenildi[anahtar] = Math.min(20, (t.ogrenildi[anahtar] || 0) + 1);
+  t.sonGun[anahtar] = bugun;
   if (!t.deneme) t.deneme = {};
   const d = t.deneme[anahtar] || [0, 0];
   d[basarili ? 0 : 1]++;

@@ -144,10 +144,12 @@ açılış çalışmazdı.
 - **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. Yalnızca Günlük
   Tekrar'daki cevaplar sayılır (konu çalışması saymaz — kullanıcının kararı).
   `ogrenildi[anahtar]` üst üste doğru serisidir; 2 ve üstü "öğrenildi".
-  Öğrenilen soru atlanmaz, seyrelir: son sorulduğu turdan (`sonTur`) seri
-  kadar tur sonra gelir — 2 turda bir, bilirse 3, sonra 4… Yanlışta seri 0,
-  her turda gelir. Bir soru turda bir kez geldiği için öğrenilmesi en az iki
-  tur ister. `deneme[anahtar] = [doğru, yanlış]` durum ekranında konuya
+  **Seri GÜN sayar:** aynı gün ikinci kez doğru bilmek seriyi artırmaz
+  (`sonGun[anahtar]`), araya bir gecenin girmesi gerekir. Öğrenilen soru
+  atlanmaz, seyrelir: son doğru bilindiği günden 3, sonra 6, 10, 15 gün
+  sonra gelir (`TEKRAR_ARALIK`). Yanlışta seri 0, her turda gelir.
+  Önceden aralık tur üzerinden ölçülüyordu; tur 1,5–2 gün sürdüğü için
+  gün karşılığı belirsizdi. `deneme[anahtar] = [doğru, yanlış]` durum ekranında konuya
   dokununca soru soru gösterilir; zayıf konular bu orana göre sıralanır.
   Günlük Tekrar'da **Geri kapalı** — geri dönüp yeniden cevaplamak aynı soruyu
   iki kez saydırıyor, "üst üste" bir dakikada doluyordu.
