@@ -135,6 +135,7 @@ function tekrarDurum() {
 
   const bugun = tekrarBugun();
   if (t.gun !== bugun) tekrarYeniGun(t, ogeler);
+  else tekrarCiftMetinleriAt(t, ogeler);
   return t;
 }
 
@@ -149,6 +150,26 @@ function tekrarSirasiGeldi(t, anahtar, tur) {
   if (seri < TEKRAR_BILME) return true;
   const son = (t.sonTur || {})[anahtar];
   return son == null || tur - son >= seri;
+}
+
+/* Eski kuralla kurulmuş günün listesinde aynı metin iki kez olabilir
+   (aynı soru birden fazla konuda). Cevaplanmamış olan fazlalık atılır;
+   sırasını kaybetmez, başka gün gelir. */
+function tekrarCiftMetinleriAt(t, ogeler) {
+  const yapilan = new Set(t.yapilan || []);
+  const gorulen = new Set();
+  const kalan = [];
+  let atilan = 0;
+  (t.liste || []).forEach(a => {
+    const oge = ogeler.get(a);
+    const metin = oge ? (oge.soru.metin || "").trim() : "";
+    if (metin && gorulen.has(metin) && !yapilan.has(a)) { atilan++; return; }
+    if (metin) gorulen.add(metin);
+    kalan.push(a);
+  });
+  if (!atilan) return;
+  t.liste = kalan;
+  ayarlariKaydet();
 }
 
 /* ---------------- günün listesi ---------------- */
@@ -178,19 +199,34 @@ function tekrarListeyiDoldur(t, ogeler) {
   const liste = [];
   const listeTur = {};                 // her soru hangi turun parçası olarak alındı
   const eklenen = new Set();
+  /* Aynı soru metni birden fazla konuda olabilir (ör. "Hangisi Uludağ?"
+     Kıvrım Dağlar, Buzul Dağları ve Kayak Merkezleri'nde). Bunlar ayrı
+     kayıtlardır; ikisi de aynı günün listesine girerse karışık sırada yan
+     yana düşüp aynı soru iki kez sorulmuş gibi görünüyordu. Günde bir
+     metin bir kez: atlanan, sırasını kaybetmeden başka gün gelir. */
+  const metinler = new Set();
   let kullanilan = 0, borctan = 0, yeniTur = false;
   let pos = bas.pos, tur = bas.tur;
   const borc = bas.borc.filter(a => ogeler.has(a));
 
   const al = (anahtar, hangiTur) => {
-    if (eklenen.has(anahtar)) return;
+    if (eklenen.has(anahtar)) return false;
+    const oge = ogeler.get(anahtar);
+    const metin = oge ? (oge.soru.metin || "").trim() : "";
+    if (metin && metinler.has(metin)) return false;
+    metinler.add(metin);
     eklenen.add(anahtar);
     liste.push(anahtar);
     listeTur[anahtar] = hangiTur;
-    kullanilan += tekrarSure(ogeler.get(anahtar), katsayi);
+    kullanilan += tekrarSure(oge, katsayi);
+    return true;
   };
 
-  while (borc.length && (!liste.length || kullanilan < butce)) { al(borc.shift(), bas.tur); borctan++; }
+  const kalanBorc = [];              // metni bugün zaten sorulan borçlar yarına kalır
+  while (borc.length && (!liste.length || kullanilan < butce)) {
+    const a = borc.shift();
+    if (al(a, bas.tur)) borctan++; else kalanBorc.push(a);
+  }
 
   for (let güvenlik = 0; güvenlik < t.sira.length; güvenlik++) {
     if (liste.length && kullanilan >= butce) break;
@@ -203,7 +239,7 @@ function tekrarListeyiDoldur(t, ogeler) {
   if (yeniTur) t.karisik = false;
   t.liste = liste;
   t.listeTur = listeTur;
-  t.borc = borc;
+  t.borc = kalanBorc.concat(borc);
   t.borcSayisi = borctan;
   t.pos = pos;
   t.tur = tur;

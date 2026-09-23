@@ -803,6 +803,24 @@ async function yedegiIceAktar(yedek) {
 function ayarlariYukle() {
   durum.ayarlar = Object.assign({ birikimli: false, yanlisSure: 6.5, ses: true, titresim: true, karistir: true, haritaZoom: false }, Depo.oku("ayarlar", {}));
 }
+/* Yanlış cevapta bekleme süresi kişiye özeldir: ayarlar.kisisel[profilId].
+   Önceden genel ayarda duruyordu; iki profil ve iki cihaz aynı değeri
+   paylaştığı için "kendiliğinden değişiyor" gibi görünüyordu. Profilin
+   kaydı yoksa eski genel değer başlangıç olarak kullanılır. */
+function kisiselAyarOku(ad, varsayilan) {
+  const k = (durum.ayarlar.kisisel || {})[durum.aktifProfilId] || {};
+  if (k[ad] !== undefined) return k[ad];
+  return durum.ayarlar[ad] !== undefined ? durum.ayarlar[ad] : varsayilan;
+}
+
+function kisiselAyarYaz(ad, deger) {
+  if (!durum.ayarlar.kisisel) durum.ayarlar.kisisel = {};
+  const kimlik = durum.aktifProfilId || ORTAK_KIMLIK;
+  if (!durum.ayarlar.kisisel[kimlik]) durum.ayarlar.kisisel[kimlik] = {};
+  durum.ayarlar.kisisel[kimlik][ad] = deger;
+  ayarlariKaydet();
+}
+
 function ayarlariKaydet() {
   Depo.yaz("ayarlar", durum.ayarlar);
 }
@@ -2501,7 +2519,7 @@ function yanlisDeneme(aciklama) {
   cevapSonrasiGoster();
   dugmeleriGuncelle();
 
-  const bekleme = Math.round((durum.ayarlar.yanlisSure ?? 6.5) * 1000);
+  const bekleme = Math.round((kisiselAyarOku("yanlisSure", 6.5) ?? 6.5) * 1000);
   clearTimeout(durum.uyariZamani);
   if (bekleme > 1500) durum.uyariZamani = setTimeout(() => ses("uyari"), bekleme - 700);
   clearTimeout(durum.zamanlayici);
@@ -2804,10 +2822,10 @@ function ayarEkraniCiz() {
   sec.innerHTML = SURE_SECENEKLERI
     .map(v => `<option value="${v}">${String(v).replace(".", ",")} saniye</option>`).join("");
   // kayıtlı değer listede yoksa en yakınına otur
-  const kayitli = durum.ayarlar.yanlisSure;
+  const kayitli = kisiselAyarOku("yanlisSure", 6.5);
   const enYakin = SURE_SECENEKLERI.reduce((a, b) =>
     Math.abs(b - kayitli) < Math.abs(a - kayitli) ? b : a);
-  if (enYakin !== kayitli) { durum.ayarlar.yanlisSure = enYakin; ayarlariKaydet(); }
+  if (enYakin !== kayitli) kisiselAyarYaz("yanlisSure", enYakin);
   sec.value = String(enYakin);
   ilerlemeKonuSeciciDoldur();
   ekranGoster("ayarlar");
@@ -3026,8 +3044,7 @@ function olaylariBagla() {
       : "Sorular objelerin sırasıyla gelecek");
   });
   $("#sure-sec").addEventListener("change", e => {
-    durum.ayarlar.yanlisSure = parseFloat(e.target.value);
-    ayarlariKaydet();
+    kisiselAyarYaz("yanlisSure", parseFloat(e.target.value));
     ses("tik");
   });
   $("#toggle-ses").addEventListener("click", () => {

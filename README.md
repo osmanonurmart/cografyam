@@ -132,6 +132,15 @@ açılış çalışmazdı.
   gün içinde değişmez; bilinemeyen soru ertesi günün başına yazılır. Sıra
   KARIŞIKTIR (konu konu değil) ve her yeni turda yeniden karışır. Soru süresi
   metin uzunluğundan tahmin edilir, ölçülen sürelerle kendini ayarlar.
+- **Aynı soru metni günde bir kez.** Aynı metin birden fazla konuda olabilir
+  ("Hangisi Uludağ?" Kıvrım Dağlar, Buzul Dağları ve Kayak Merkezleri'nde —
+  toplam 17 metin böyle). Ayrı kayıtlar oldukları için ikisi de günün
+  listesine girip karışık sırada yan yana düşüyordu. Liste kurulurken aynı
+  metinden yalnız biri alınır; atlanan borçta/sırada kalır, başka gün gelir.
+- **Yanlış cevapta bekleme süresi kişiye özeldir** (`ayarlar.kisisel[profilId]
+  .yanlisSure`, `kisiselAyarOku/Yaz`). Genel ayarda dururken iki profil ve iki
+  cihaz aynı değeri paylaşıyordu, "kendiliğinden değişiyor" gibi görünüyordu.
+  Profilin kaydı yoksa eski genel değer başlangıç olur.
 - **Günlük tekrar kişiye özel:** `ayarlar.tekrar[profilId]`. Yalnızca Günlük
   Tekrar'daki cevaplar sayılır (konu çalışması saymaz — kullanıcının kararı).
   `ogrenildi[anahtar]` üst üste doğru serisidir; 2 ve üstü "öğrenildi".
